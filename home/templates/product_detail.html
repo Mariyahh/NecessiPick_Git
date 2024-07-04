@@ -1,0 +1,801 @@
+{% extends 'includes/base.html' %}
+{% load static %}
+{% block content %} 
+
+<style>
+.center-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 160px;
+  display: flex;
+  border-radius: 20px;
+  align-items: center;
+  padding: 10px;
+
+ 
+}
+.center-toast .toast-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center; /* Optional, for horizontal centering */
+    font-size: 18px;
+}
+.warning{
+    align-items: center;
+   height: 70px; 
+   width: 70px;
+}
+.title-container {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    }
+</style>
+
+
+<script>
+    var csrftoken = getCookie('csrftoken');  // Get the CSRF token
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+
+
+<main class="main">
+    <div class="page-header breadcrumb-wrap">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html" rel="nofollow"><i class="fi-rs-home mr-5"></i>Home</a>
+                <span></span> <a href="">{{ product.supermarket }}</a>
+                <span></span> <a href="">{{ product.category }}</a>
+                <span></span> {{ product.brand }}
+            </div>
+        </div>
+    </div>
+    <div class="container mb-30">
+        <div class="row">
+            <div class="col-xl-11 col-lg-12 m-auto">
+                <div class="row flex-row-reverse">
+                    <div class="col-xl-9">
+                        <div class="product-detail accordion-detail">
+                            <div class="row mb-50 mt-30">
+                                <div class="col-md-6 col-sm-12 col-xs-12 mb-md-0 mb-sm-5">
+                                    <div class="detail-gallery">
+                                        <span class="zoom-icon"><i class="fi-rs-search"></i></span>
+                                        <!-- MAIN SLIDES -->
+                                        <div class="product-image-slider">
+                                            <figure class="border-radius-10">
+                                                <img src="{{ product.image }}" alt="{{ product.title }}">
+                                            </figure>
+                                        </div>
+                                    </div>
+                                    <!-- End Gallery -->
+                                </div>
+                                <div class="col-md-6 col-sm-12 col-xs-12">
+                                    <div class="detail-info pr-30 pl-30">
+                                        <!-- <span class="stock-status out-stock">
+                                            Sale Off
+                                        </span>  ALISIN KAPAG DI NAMAN NEED -->
+                                        <h2 class="title-detail">{{ product.title }}</h2>
+                                        <div class="clearfix product-price-cover">
+                                            <div class="product-price primary-color float-left">
+                                                <span class="current-price text-brand">{{ product.original_price }}</span>
+                                                <span>
+                                                    <span class="old-price font-md ml-15">{{ product.discounted_price }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="short-desc mb-30">
+                                            <p class="font-lg">{{ product.description }}</p>
+                                        </div>
+                                        <div class="detail-extralink mb-50">
+                                            <div class="product-extra-link2">
+                                                <button onclick="window.location.href='{{ product.url }}'"
+                                                    class="button button-add-to-cart">
+                                                    <i class="fi-rs-shopping-cart"></i>Visit Store
+                                                </button>
+                                                <button onclick="addToFavorites('{{ product.id }}')" class="button button-add-to-favorites" id="add-to-favorites-button" name="add-to-favorite">
+                                                    <i class="fa-solid fa-basket-shopping" style="color: #ffffff;"></i>&nbsp&nbsp&nbsp&nbspAdd to Shopping List                                                
+                                                </button>
+                                                
+                                                <br>
+
+                                                <div class="toast center-toast" id="success-toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="10000">
+                                                    <div class="toast-container">
+                                                        <div class="toast-content">
+                                                            <img class="toast-image" src="{% static 'icons/success.png' %}">
+                                                            <div class="toast-body">
+                                                                <!-- The success message will be displayed here -->
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="toast center-toast" id="error-toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="3000">
+                                                    <div class="toast-container">
+                                                        <div class="toast-content">
+                                                            <img class="toast-image" src="{% static 'icons/warning2.png' %}">
+                                                            <div class="toast-body">
+                                                                <!-- The error message will be displayed here -->
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- <div class="toast center-toast" id="success-toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="10000">
+                                                    <div class="toast-body">
+                                                        <div class="toast-content">
+                                                            <img class="toast-image" src="{% static 'icons/success.png' %}">
+                                                            <div id="toast-message"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="toast-body" id="toast-message"></div>
+                                                </div>
+                                                
+                                                <div class="toast center-toast" id="error-toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="10000">
+                                                    <div class="toast-body">
+                                                        <div class="toast-content">
+                                                            <img class="toast-image" src="{% static 'icons/warning2.png' %}">
+                                                            <div id="error-toast-message"></div>
+                                                        </div>
+                                                    </div>
+                                                </div> -->
+
+
+                                                <div class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" data-delay="3000">
+                                                    <div class="toast-header">
+                                                        <strong class="mr-auto">Notification</strong>
+                                                        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="toast-body">
+                                                        <!-- The response message will be displayed here -->
+                                                    </div>
+                                                </div>
+                                                <!-- %%%%%%%%%%%%%%%%%%%%%5 -->
+                                                <!-- <div class="modal fade" id="notification-modal" tabindex="-1" role="dialog" aria-labelledby="notification-modal-label" aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="notification-modal-label">Notification</h5>
+                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                            </div>
+                                                            <div class="modal-body"> -->
+                                                                <!-- The response message will be displayed here -->
+                                                            <!-- </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div> -->
+
+
+                                                <!-- LIKE AND DISLIKE BUTTON HTML FORM -->
+                                                <!-- Add a span element to display the like and dislike counts -->
+                                                <br>
+                                                <div class="interaction-buttons">
+                                                    <span id="like-count" style="padding-bottom: 2px;">{{ like_count }}</span>
+                                                    <!-- Like button -->
+                                                    <button type="button" style="border: none; background: none;" class="toggle-button {% if user_interaction and user_interaction.action == 'like' %}active{% endif %}" data-action="like" data-product-id="{{ product.id }}">
+                                                        <i id="like-icon" class="{% if user_interaction and user_interaction.action == 'like' %}fa-solid{% else %}fa-regular{% endif %} fa-thumbs-up fa-2xl" style="color: #3bb77e;"></i>
+                                                    </button>
+                                                    &nbsp;&nbsp;&nbsp;
+                                                    <span id="dislike-count">{{ dislike_count }}</span>
+                                                    <!-- Dislike button -->
+                                                    <button type="button" style="border: none; background: none;" class="toggle-button {% if user_interaction and user_interaction.action == 'dislike' %}active{% endif %}" data-action="dislike" data-product-id="{{ product.id }}">
+                                                        <i id="dislike-icon" class="{% if user_interaction and user_interaction.action == 'dislike' %}fa-solid{% else %}fa-regular{% endif %} fa-thumbs-down fa-2xl" style="color: #3bb77e;"></i>
+                                                    </button>
+                                                </div>
+
+                                                <style>
+                                                    .toggle-button i {
+                                                        border: none;
+                                                    }
+                                                </style>
+                                                <!-- END LIKE AND DISLIKE BUTTON HTML FORM -->
+                                               
+
+                                                <div class="modal" id="authorizationModal" tabindex="-1" role="dialog">
+                                                    <div class="modal-dialog text-center" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Authorization Required</h5>
+                                                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>You need to log in to perform this action. Please log in or create an account.</p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" id="closeModalButton" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div> 
+                                        </div>    
+                                    </div>
+                                    <!-- Detail Info -->
+                                </div>
+                            </div>
+                            <h3>Price History</h3><hr>
+                            {% if has_price_history %}
+                            <canvas id="priceHistoryChart" width="400" height="200"></canvas>
+                        {% else %}
+                            <p>No price history available for this product.</p>
+                        {% endif %}
+                        <!-- product_detail.html -->
+                        <!-- Your existing product_detail.html template code here... -->
+
+                        <br><h2>Similar Products</h2>
+                        <div class="similar-products product-info">
+                            <div class="row">
+                                {% if similar_products %}
+                                {% for similar_product in similar_products %}
+                                <div class="col-md-12 mb-4">
+                                    <div class="d-flex align-items-center pb-2 border-bottom border-gray">
+                                        <!-- Add conditional logic to display the supermarket logo -->
+                                        <div class="supermarket-logo mr-3">
+                                            {% if similar_product.supermarket == "WalterMart" %}
+                                            <img src="{% static '/icons/small_waltermart.png' %}" alt="WalterMart Logo" style="width: 90px; height: 55px;">
+                                            {% elif similar_product.supermarket == "Puregold" %}
+                                            <img src="{% static '/icons/small_puregold.png' %}" alt="Puregold Logo" style="width: 80px; height: 60px;">
+                                            {% elif similar_product.supermarket == "ShopMetro" %}
+                                            <img src="{% static '/icons/small_shopmetro.png' %}" alt="ShopMetro Logo" style="width: 80px; height: 60px;">
+                                            {% endif %}
+                                        </div>
+                        
+                                        <!-- Product Image (cropped in a circle) -->
+                                        <div class="rounded-circle overflow-hidden mr-3" style="width: 60px; height: 60px;">
+                                            <img src="{{ product.image }}" alt="{{ product.title }}" class="w-100 h-100">
+                                        </div>
+                        
+                                        <div class="mr-3">
+                                            <p>{{ similar_product.title }}</p>
+                                        </div>
+                                        <div class="ml-auto">
+                                            <h5 class="current-price text-brand">{{ similar_product.original_price }}</h5>
+                                        </div>
+                                        <div class="ml-auto">                                                
+                                            <a href="{{ similar_product.url }}">
+                                                <img src="{% static '/imgs/theme/link.png' %}" alt="Go to Link" style="width: 20px; height: 20px;">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br><br>
+                                {% endfor %}
+                                {% else %}
+                                <div class="col-md-12">
+                                    <p>No similar products available from other supermarkets.</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div><br><br>
+  
+                            <div class="product-info">
+                                <div class="tab-style3">
+                                    <ul class="nav nav-tabs text-uppercase">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="Additional-info-tab" data-bs-toggle="tab"
+                                                href="#Additional-info">Additional info</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="Reviews-tab" data-bs-toggle="tab" href="#Reviews">Comments ({{ comment_count }})</a>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content shop_info_tab entry-main-content">
+                                        <div class="tab-pane fade show active" id="Additional-info">
+                                            <table class="font-md">
+                                                <tbody>
+                                                    <tr class="stand-up">
+                                                        <th>Product ID</th>
+                                                        <td>
+                                                            <p>{{ product.id }}</p>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="folded-wo-wheels">
+                                                        <th>Supermarket</th>
+                                                        <td>
+                                                            <p>{{ product.supermarket }}</p>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="folded-w-wheels">
+                                                        <th>Product Category</th>
+                                                        <td>
+                                                            <p>{{ product.category }}</p>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="door-pass-through">
+                                                        <th>Brand</th>
+                                                        <td>
+                                                            <p>{{ product.brand }}</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="tab-pane fade" id="Reviews">
+                                            <!--Comments-->
+                                            <div class="comments-area">
+                                                <div class="row">
+                                                    <div class="col-lg-8">
+                                                        <h4 class="mb-30">Customer Comments</h4>
+
+                                                        <form id="csrf-form">
+                                                            {% csrf_token %}
+                                                        </form>
+
+                                                        {% for comment in comments %}
+                                                            <div class="comment-list">
+                                                                <div
+                                                                    class="single-comment justify-content-between d-flex mb-30">
+                                                                    <div class="user justify-content-between d-flex">
+                                                                        <div class="thumb text-center">
+                                                                            <a href="#" class="font-heading text-brand">{{ comment.user_name }}</a>
+                                                                        </div>
+                                                                        <div class="desc">
+                                                                            <div
+                                                                                class="d-flex justify-content-between mb-10">
+                                                                                <div class="d-flex align-items-center">
+                                                                                    <span
+                                                                                        class="font-xs text-muted">{{ comment.timestamp }}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <p class="mb-10">{{ comment.text }}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <!-- -----------------------------ETO KAPAG MAGDEDELETE COMMENT---------------------------------- -->
+                                                                    {% if comment.user_id == user.id %}
+                                                                        <a href="#" class="delete-comment-btn" data-comment-id="{{ comment.comment_id }}"><i class="fa-solid fa-trash" style="color: #ea1f1f;margin-right: 10px;"></i></a>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        {% empty %}
+                                                            <li>No comments yet.</li>
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div class="col-lg-4">
+                                                        <h4 class="mb-30">Customer reviews</h4>
+                                                        <div class="d-flex mb-30">
+                                                            <i class="fa-solid fa-thumbs-up" style="color: #3bb77e;margin-right: 10px;"></i>
+                                                            <h6 id="total-likes-over-interactions"></h6>
+                                                        </div>
+
+                                                        <div class="progress">
+                                                            <span>Like</span>
+                                                            <div class="progress-bar" id="like-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><p id="like-bar" style="color: white;"></p></div>
+                                                        </div>
+                                                        <div class="progress">
+                                                            <span>Dislike</span>
+                                                            <div class="progress-bar" id="dislike-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><p id="dislike-bar" style="color: white;"></p></div>
+                                                        </div> <br>
+                                                        <p>Most Interactions: <span id="more-interactions">Like/Dislike</span></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Comment form -->
+                                            {% if user.is_authenticated %}
+                                                {% if not user_has_commented %}
+                                                    <!-- Comment form -->
+                                                    <div class="comment-form">
+                                                        <h4 class="mb-15">Add a Comment</h4>
+                                                        <form class="form-contact comment_form" action="{% url 'home:add_comment' product.id %}" method="post">
+                                                            {% csrf_token %}
+                                                            <div class="row">
+                                                                <div class="col-12">
+                                                                    <div class="form-group">
+                                                                        <textarea class="form-control w-100" name="comment_text" id="comment" cols="30" rows="9" placeholder="Write Comment"></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <button type="submit" class="button button-contactForm">Submit Review</button>
+                                                                </div>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-60">
+                                <div class="col-12">
+                                    <h2 class="section-title style-1 mb-30">FROM THE SAME SUPERMARKET</h2>
+                                </div>
+                                <div class="col-12">
+                                    <div class="row related-products">
+                                        <div class="row">
+                                            {% for random_prod in random_products %}
+                                                {% if random_prod.id != product.id %}
+                                                    <div class="col-lg-3 col-md-4 col-12 col-sm-6">
+                                                        <div class="product-cart-wrap hover-up">
+                                                            <!-- Product Image -->
+                                                            <div class="product-img product-img-zoom">
+                                                                <a href="{% url 'home:product_detail' product_id=random_prod.id %}"  data-id="{{ random_prod.id }}">
+                                                                    <img class="default-img" src="{{ random_prod.image }}"
+                                                                        alt="{{ random_prod.title }}">
+                                                                </a>
+                                                            </div>
+
+                                                            <!-- Product Modals -->
+
+                                                            
+                                                            <!-- Product info -->
+                                                            <div class="product-content-wrap">
+                                                                <div class="product-category">
+                                                                    <a href="shop-grid-right.html">{{ category }}</a>
+                                                                </div>
+                                                                <h2><a href="{% url 'home:product_detail' product_id=random_prod.id %}" data-id="{{ random_prod.id }}">{{ random_prod.title }}</a></h2>
+                                                                <div class="product-rate-cover" style="display: flex; justify-content: space-between;">
+                                                                    <label class="fw-900 mt-15">
+                                                                        <img style="height: 20px; width: 20px;" src="{% static 'icons/icon_like.png' %}"> {{ random_prod.like_count }}
+                                                                    </label>
+                                                                    <label class="fw-900 mt-15" style="align-self: flex-end;">
+                                                                        <img style="height: 20px; width: 20px;" src="{% static 'icons/icon_dislike.png' %}"> {{ random_prod.dislike_count }}
+                                                                    </label>
+                                                                </div>
+                                                                <div class="product-rate-cover">
+                                                                    <label class="fw-900 mt-15" style="width: 90%">{{random_prod.supermarket}}</label>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="font-small text-muted">{{ random_prod.weight }}</span>
+                                                                </div>
+                                                                <div class="product-card-bottom">
+                                                                    <div class="product-price">
+                                                                        {% if random_prod.discounted_price %}
+                                                                        <span>{{ random_prod.discounted_price }}</span>
+                                                                        {% if random_prod.original_price %}
+                                                                        <span class="old-price">{{ random_prod.original_price }}</span>
+                                                                        {% else %}
+                                                                        <span class="old-price"></span>
+                                                                        {% endif %}
+                                                                        {% else %}
+                                                                        <span>{{ random_prod.original_price }}</span>
+                                                                        <span class="old-price"></span>
+                                                                        {% endif %}
+                                                                    </div>
+                
+                                                                    <div class="add-cart">
+                                                                        <a class="add" href="#"><i class="fi-rs-shopping-cart mr-5"></i>View</a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 primary-sidebar sticky-sidebar mt-30">
+                        <div class="sidebar-widget widget-category-2 mb-30">
+                            <h5 class="section-title style-1 mb-30 wow fadeIn animated">Category</h5>
+                            <ul>
+                                <li> <a href="{% url 'home:category' category_name='Canned Goods' %}"> <img src="{% static 'imgs/theme/icons/cannedfood.png' %}" alt="">Canned Goods</a><span class="count">{{ category_counts.Canned_Goods }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Milk' %}"> <img src="{% static 'imgs/theme/icons/milk.png' %}" alt="">Milk</a><span class="count">{{ category_counts.Milk }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Coffee' %}"> <img src="{% static 'imgs/theme/icons/coffee.png' %}" alt="">Coffee</a><span class="count">{{ category_counts.Coffee }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Bread' %}"> <img src="{% static 'imgs/theme/icons/bread.png' %}" alt="">Bread</a><span class="count">{{ category_counts.Bread }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Candle' %}"> <img src="{% static 'imgs/theme/icons/candles.png' %}" alt="">Candles</a><span class="count">{{ category_counts.Candle }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Water' %}"> <img src="{% static 'imgs/theme/icons/water.png' %}" alt="">Water/Mineral</a><span class="count">{{ category_counts.Water }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Vinegar' %}"> <img src="{% static 'imgs/theme/icons/vinegar.png' %}" alt="">Vinegar</a><span class="count">{{ category_counts.Vinegar }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Soy Sauce' %}"> <img src="{% static 'imgs/theme/icons/soysauce.png' %}" alt="">Soy Sauce</a><span class="count">{{ category_counts.Soy_Sauce }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Fish Sauce' %}"> <img src="{% static 'imgs/theme/icons/fishsauce.png' %}" alt="">Fish Sauce</a><span class="count">{{ category_counts.Fish_Sauce }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Noodles' %}"> <img src="{% static 'imgs/theme/icons/noodle.png' %}" alt="">Noodles</a><span class="count">{{ category_counts.Noodles }}</span></li>
+                                <li> <a href="{% url 'home:category' category_name='Laundry Aids' %}"> <img src="{% static 'imgs/theme/icons/laundry.png' %}" alt="">Laundry Aids</a><span class="count">{{ category_counts.Laundry_Aids }}</span></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Product sidebar Widget -->
+                        <div class="sidebar-widget product-sidebar  mb-30 p-30 bg-grey border-radius-10">
+                            <h5 class="section-title style-1 mb-30 wow fadeIn animated">Supermarkets</h5>
+                            <div class="banner-img wow fadeIn animated" style="padding-left: 0%;">
+                                <img src="{% static 'imgs/banner/Metro_Banner.png' %}" alt="">
+                                <div class="banner-text" style="margin-right: 5%;">
+                                    <h6> World-class & <br>Satisfying <br>Shopping<br> Experience</h6>
+                                    <a href="{% url 'supermarket:supermarket_page' supermarket_name='ShopMetro' %}"
+                                        class="btn btn-xs">Shop Now <i class="fi-rs-arrow-small-right"></i></a>
+                                </div>
+                            </div>
+                            <div class="banner-img wow fadeIn animated" style="padding-left: 0%;">
+                                <img src="{% static 'imgs/banner/P_Banner.png' %}" alt="">
+                                <div class="banner-text" style="margin-right: 5%;">
+                                    <h6>Supermarket of <br>Choice for<br>Fresh and<br>Healthy Food</h6>
+                                    <a href="{% url 'supermarket:supermarket_page' supermarket_name='Puregold' %}"
+                                        class="btn btn-xs">Shop Now <i class="fi-rs-arrow-small-right"></i></a>
+                                </div>
+                            </div>
+                            <div class="banner-img wow fadeIn animated" style="padding-left: 0%;">
+                                <img src="{% static 'imgs/banner/Walter_Banner.png' %}" alt="">
+            
+                                <div class="banner-text" style="margin-right: 5%;">
+                                    <h6>Happy and Safe <br> Shopping<br> Environment</h6>
+                                    <a href="{% url 'supermarket:supermarket_page' supermarket_name='WalterMart' %}"
+                                        class="btn btn-xs">Shop Now <i class="fi-rs-arrow-small-right"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    var csrf_token = "{{ csrf_token }}";
+
+    var userIsAuthenticated = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
+
+    // Add this code to your JavaScript file (e.g., scripts.js)
+    $(".toggle-button").on("click", function() {
+        const button = $(this); 
+        const icon = button.find("i");
+
+        const csrf_token = "{{ csrf_token }}";
+        const product_id = button.data("product-id");
+        const action = button.data("action");
+        const headers = { "X-CSRFToken": csrf_token };
+
+        if (!userIsAuthenticated) {
+        // Show the authorization modal
+        $("#authorizationModal").modal("show");
+        return;
+        }
+        
+        // Add this code to your JavaScript file (e.g., scripts.js)
+        $("#closeModalButton").on("click", function() {
+            $("#authorizationModal").modal("hide");
+        });
+        
+        // Debugging: Log the value of product_id to the console
+        console.log("Product ID:", product_id);
+
+        $.ajax({
+            type: "POST",
+            url: "/toggle-like-dislike/",  // Update this URL as needed
+            headers: headers,
+            data: {
+                product_id: product_id,
+                action: action
+            },
+            success: function(data) {
+                if (data.result === 'added') {
+                    // Update the UI to show the button as active
+                    button.addClass("active");
+                    icon.removeClass("fa-regular").addClass("fa-solid");
+                } else if (data.result === 'removed' || data.result === 'updated') {
+                    // Update the UI to remove the active state
+                    button.removeClass("active");
+                    icon.removeClass("fa-solid").addClass("fa-regular");
+                }
+
+                // Update the like and dislike counts in the UI
+                $("#like-count").text(data.like_count);
+                $("#dislike-count").text(data.dislike_count);
+            }
+        });
+        window.location.reload();
+    });
+</script>
+
+
+<script>
+    var csrf_token = "{{ csrf_token }}";
+
+    var userIsAuthenticated = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
+   
+    function addToFavorites(productId) {
+        if (!userIsAuthenticated) {
+            // Show the authorization modal
+            $("#authorizationModal").modal("show");
+            return;
+        }else{
+            // Make an AJAX request to add the product to favorites
+            $.ajax({
+                url: `/add-to-favorites/${productId}/`,
+                type: 'POST',
+                data: { product_id: productId },
+                headers: { 'X-CSRFToken': csrf_token },
+                success: function(response, status, xhr) {
+                    if (xhr.status === 200) {
+                        // Show a success toast
+                        showSuccessToast(response);
+                    } else if (xhr.status === 400) {
+                        // Show an error toast
+                        showErrorToast(response);
+                        console.log(response);
+                    }
+                },
+                error: function(xhr) {
+                    // Handle other types of errors, if needed
+                    showErrorToast( xhr.responseText);
+                }
+            });
+        }
+
+        // Add this code to your JavaScript file (e.g., scripts.js)
+        $("#closeModalButton").on("click", function() {
+            $("#authorizationModal").modal("hide");
+        });
+    }
+
+    function showSuccessToast(message) {
+        $('#success-toast .toast-body').text(message);
+        $('#success-toast').toast('show');
+    }
+
+    function showErrorToast(message) {
+        $('#error-toast .toast-body').text(message);
+        $('#error-toast').toast('show');
+    }
+</script>
+
+<!-- 
+<script>
+    const likeButtons = document.querySelectorAll('.toggle-button[data-action="like"]');
+    const dislikeButtons = document.querySelectorAll('.toggle-button[data-action="dislike"]');
+    const authModal = document.getElementById('authModal');
+    const closeModalButton = document.getElementById('closeModal');
+  
+    likeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        if (!{{ user.is_authenticated }}) {  // Check if the user is authenticated
+          authModal.style.display = 'block';  // Display the modal
+        } else {
+          // Handle the like action
+          // You may need to add code here to send an AJAX request to your Django view
+        }
+      });
+    });
+  
+    dislikeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        if (!{{ user.is_authenticated }}) {  // Check if the user is authenticated
+          authModal.style.display = 'block';  // Display the modal
+        } else {
+            
+          // Handle the dislike action
+          // You may need to add code here to send an AJAX request to your Django view
+        }
+      });
+    });
+  
+    closeModalButton.addEventListener('click', function() {
+      authModal.style.display = 'none';  // Close the modal when the "Close" button is clicked
+    });
+  
+    // Close the modal if the user clicks outside of it
+    window.addEventListener('click', function(event) {
+      if (event.target === authModal) {
+        authModal.style.display = 'none';
+      }
+    });
+  </script> -->
+
+<!--  BAGO ITO FOR DELETING COMMENTS -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteButtons = document.querySelectorAll('.delete-comment-btn');
+
+        deleteButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                // Get comment ID from the data-comment-id attribute
+                var commentId = this.getAttribute('data-comment-id');
+
+                // Ensure commentId is not empty or undefined before making the request
+                if (commentId) {
+                    // Include the CSRF token in the headers
+                    var csrfTokenInput = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
+                    
+                    if (csrfTokenInput) {
+                        var csrfToken = csrfTokenInput.value;
+
+                        // Send an AJAX request to delete the comment
+                        fetch('/delete_comment/' + commentId + '/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken,
+                                'Content-Type': 'application/json',
+                            },
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.result === 'success') {
+                                // Remove the deleted comment from the DOM
+                                // this.closest('.comment-list').remove();
+                                // Reload the page after successful deletion
+                                location.reload();
+                            } else {
+                                console.error('Error deleting comment:', data.result);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                        });
+                    } else {
+                        console.error('CSRF token input not found');
+                    }
+                } else {
+                    console.error('Comment ID is missing or invalid');
+                }
+            });
+        });
+    });
+</script>
+
+
+
+
+
+
+<script>
+    // Sample data for like and dislike counts
+    var totalLikes = parseInt("{{ like_count }}");
+    var totalDislikes = parseInt("{{ dislike_count }}");
+
+    console.log("totalLikes:", totalLikes);
+    console.log("totalDislikes:", totalDislikes);
+
+    // Calculate percentages
+    var totalInteractions = totalLikes + totalDislikes;
+    var likePercentage = (totalLikes / totalInteractions) * 100;
+    var dislikePercentage = (totalDislikes / totalInteractions) * 100;
+
+    // Determine which has more interactions
+    var moreInteractions
+    if (totalLikes > totalDislikes) {
+        moreInteractions = 'Like';
+    } else if (totalLikes < totalDislikes) {
+        moreInteractions = 'Dislike';
+    } else {
+        moreInteractions = 'None';
+    }
+
+    // Display the counts and percentages
+    document.getElementById('total-likes-over-interactions').textContent = totalLikes + ' Likes out of ' + totalInteractions + ' User Interactions';
+    document.getElementById('like-progress-bar').style.width = likePercentage + '%';
+    document.getElementById('dislike-progress-bar').style.width = dislikePercentage + '%';
+    document.getElementById('like-bar').textContent = likePercentage + '%';
+    document.getElementById('dislike-bar').textContent = dislikePercentage + '%';
+    document.getElementById('more-interactions').textContent = moreInteractions;
+</script>
+
+
+
+{% endblock %}

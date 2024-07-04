@@ -1,0 +1,192 @@
+{% extends "includes/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<!-- <main class="main pages">
+    <div class="page-content pt-60 pb-60">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 m-auto">
+                    <h2>Edit Profile</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ name_form.as_p }}
+                        {{ profile_form.as_p }}
+                        <button type="submit">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main> -->
+
+
+<main class="main pages">
+    <div class="page-header breadcrumb-wrap">
+        <div class="container">
+            <!-- Your breadcrumb here -->
+        </div>
+    </div>
+    <div class="page-content pt-60 pb-60">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 m-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+
+                                 <!-- First Name Input -->
+                                 <div class="form-group">
+                                    <label for="{{ name_form.first_name.id_for_label }}" style="color: #220000;">First Name</label>
+                                    {{ name_form.first_name }}
+                                </div>
+
+                                <!-- Last Name Input -->
+                                <div class="form-group">
+                                    <label for="{{ name_form.last_name.id_for_label }}" style="color: #220000;">Last Name</label>
+                                    {{ name_form.last_name }}
+                                </div> 
+
+                                <!-- Gender Dropdown -->
+                                <div class="form-group">
+                                    <label for="{{ profile_form.gender.id_for_label }}" style="color: #220000;">Gender</label>
+                                    {{ profile_form.gender }}
+                                </div>
+
+                                <!-- Birthday Date Input -->
+                                <div class="form-group">
+                                    <label for="birthday" style="color: #220000;">Birthday</label>
+                                    <input type="date" class="form-control" id="birthday" name="birthday" required style="background-color: white;">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="age" style="color: #220000;">Age</label>
+                                    <input type="text" class="form-control" id="age" name="age" style="background-color: white;" readonly>
+                                </div>
+                                
+
+                                <!-- Region and City Dropdowns  -->
+                                <div class="row col-md-12">
+                                    <div class="form-group col-md-5">
+                                        <label for="region" style="color: #220000;">Region</label>
+                                        <select id="region" name="region" class="field" style="background-color: white;" required>
+                                            <option value="" disabled selected>Select Region</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group col-md-5">
+                                        <label for="city" style="color: #220000;">City</label>
+                                        <select id="city" name="city" class="field" style="background-color: white;" required>
+                                            <option value="" disabled selected>Select City</option>
+                                        </select>
+                                    </div>
+                                    
+                                </div>
+
+                                <!-- Purpose Dropdown -->
+                                <div class="form-group">
+                                    <label for="{{ profile_form.purpose.id_for_label }}" style="color: #220000;">Purpose</label>
+                                    {{ profile_form.purpose }}
+                                </div>
+
+                                <button type="submit" class="btn btn-fill-out submit font-weight-bold">Save</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<script>
+    $(document).ready(function () {
+        $('#birthday').on('input', function () {
+            var dob = new Date($(this).val());
+            var today = new Date();
+            var age = today.getFullYear() - dob.getFullYear();
+
+            // Adjust age if the birthday hasn't occurred this year yet
+            if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) {
+                age--;
+            }
+
+            $('#age').val(age);
+        });
+    });
+
+//     $(document).ready(function () {
+//     // Check if the age field is empty before calculating the age
+//     if ($('#age').val() === '') {
+//         $('#birthday').on('input', function () {
+//             var dob = new Date($(this).val());
+//             var today = new Date();
+//             var age = today.getFullYear() - dob.getFullYear();
+
+//             // Adjust age if the birthday hasn't occurred this year yet
+//             if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) {
+//                 age--;
+//             }
+
+//             $('#age').val(age);
+//         });
+//     }
+// });
+ 
+</script> 
+
+    <!-- Javascript for locaiton API -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cityList = document.getElementById('city');
+            const regionList = document.getElementById('region');
+
+            // Populate the region dropdown
+            fetch('https://psgc.gitlab.io/api/island-groups/luzon/regions')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(region => {
+                        const option = document.createElement('option');
+                        option.value = region.name;
+                        option.dataset.regionCode = region.code; // Store the region code as a custom attribute
+
+                        option.text = region.name;
+                        regionList.add(option);
+                    });
+                });
+
+            // Add an event listener to the region dropdown
+            regionList.addEventListener('change', () => {
+                // Clear the city dropdown
+                cityList.innerHTML = '';
+
+                // Get the selected region
+                // const selectedRegion = regionList.value;
+
+                const selectedOption = regionList.options[regionList.selectedIndex];
+                const selectedRegionName = selectedOption.value; // Region name
+                const selectedRegion = selectedOption.dataset.regionCode; // Region code
+
+                if (selectedRegion) {
+                    // Fetch cities associated with the selected region
+                    fetch(`https://psgc.gitlab.io/api/regions/${selectedRegion}/cities/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(city => {
+                                const option = document.createElement('option');
+                                option.value = city.name;
+                                option.text = city.name;
+                                cityList.add(option);
+                            });
+                        });
+                }
+            });
+        });
+    </script>
+
+
+
+{% endblock %}

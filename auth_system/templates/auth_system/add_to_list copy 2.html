@@ -1,0 +1,626 @@
+{% extends "includes/base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+<style>
+    body {
+        padding: 5%; /* Add padding to the entire website */
+    }
+    table {
+        width: 100%;
+        table-layout: fixed;
+        white-space: nowrap;
+        overflow: auto;
+        border-collapse: collapse;
+    }
+    table td {
+        text-align: center;
+        vertical-align: middle;
+        padding: 10px;
+    }
+    table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    /* CSS for the confirmation modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .title-container {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+    var csrftoken = getCookie('csrftoken');  // Get the CSRF token
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script><br><br>
+<h1>Your Shopping List</h1><hr>
+<div id="sum-display">
+    <br><br>
+    <h3>Total Selected Price: <span id="total-price">₱0.00</span></h3><br><br>
+    <table>
+        <tr>
+            <th style="font-size: 20px; text-align: center;font-weight: bold;">Puregold Total Selected Price</th>
+            <th style="font-size: 20px; text-align: center;font-weight: bold;">ShopMetro Total Selected Price</th>
+            <th style="font-size: 20px; text-align: center;font-weight: bold;">WalterMart Total Selected Price</th>
+        </tr>
+        <tr>
+            <td style="font-size: 22px;" id="column-sum-puregold">₱0.00</td>
+            <td style="font-size: 22px;" id="column-sum-shopmetro">₱0.00</td>
+            <td style="font-size: 22px;" id="column-sum-waltermart">₱0.00</td>
+        </tr>
+    </table>
+    <br><br>
+    <!-- Add the "Clear List" button and confirmation modal -->
+    <button type="button" id="clear-list-button" class="btn btn-primary modal-button" data-bs-dismiss="modal">Clear List&nbsp&nbsp&nbsp&nbsp<i class="fa-solid fa-trash"></i></button>
+    <br><br>
+</div>
+
+<!-- Modal for Delete Confirmation -->
+<div class="modal" id="confirmation-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered text-center" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Item Confirmation</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove this item from your shopping list?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-button" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal for Delete Confirmation FAVORITES -->
+<div class="modal" id="confirmationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered text-center" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Item Confirmation</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove this item from your favorites?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-button" class="btn btn-primary" data-bs-dismiss="modal" data-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmRemoveBtn" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal for Clear List Confirmation -->
+<div class="modal" id="clear-list-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered text-center" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Clear List Confirmation</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to clear your shopping list?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="clear-list-cancel-button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="clear-list-confirm-button" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+<h4>Prices with "<i class="fa fa-check" style="color: #3bb77e;"></i>" are the cheapest.</h4>
+<br><br>
+
+
+<table>
+    <tr>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Image</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;" class="puregold">Puregold Price</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;" class="shopmetro">ShopMetro Price</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;" class="waltermart">WalterMart Price</th>
+    </tr>
+
+    {% for batch_identifier, data in favorite_products.items %}
+    <tr data-batch-identifier="{{ batch_identifier }}">
+        <td>
+            <div style="display: inline-block; width: 40%; vertical-align: middle; text-align: center;">
+                <img src="{{ data.image }}" alt="{{ data.title }}" style="width: 100%;" /><br>
+                <div class="title-container">
+                    {{ data.title }}
+                </div>
+            </div>
+            <div style="display: inline-block; text-align: center; vertical-align: middle;">
+                <a class="quantity-button minus"><i class="fa-solid fa-minus" style="color: #3bb77e;"></i></a>&nbsp&nbsp
+                <span class="quantity" id="quantity_{{ batch_identifier }}">1</span>&nbsp&nbsp
+                <a class="quantity-button plus"><i class="fa-solid fa-plus" style="color: #3bb77e;"></i></a>&nbsp;&nbsp;&nbsp;
+                <i class="fa-solid fa-trash remove-row" style="color: #e22c2c;" data-batch-identifier="{{ batch_identifier }}"></i>&nbsp;&nbsp;&nbsp;
+                <a class="save-to-favorites-btn" data-batch-identifier="{{ batch_identifier }}"><i class="fa-solid fa-bookmark" style="color: #fff266;"></i></a>
+            </div>
+        </td>
+        <td style="font-size: 22px;" class="price-cell puregold{% if data.puregold_price%}{%else%}no-click{% endif %}" id="puregold_{{ batch_identifier }}">
+            {% if data.puregold_price %}
+                ₱<span class="price-value">{{ data.puregold_price }}</span>
+            {% else %}
+                <span class="no-click">No Record Found</span>
+            {% endif %}            
+        </td>
+        <td style="font-size: 22px;" class="price-cell shopmetro{% if data.shopmetro_price%}{%else%}no-click{% endif %}" id="shopmetro_{{ batch_identifier }}">
+            {% if data.shopmetro_price %}
+                ₱<span class="price-value">{{ data.shopmetro_price }}</span>
+            {% else %}
+                <span class="no-click">No Record Found</span>
+            {% endif %}
+        </td>
+        <td style="font-size: 22px;" class="price-cell waltermart{% if data.waltermart_price%}{%else%}no-click{% endif %}" id="waltermart_{{ batch_identifier }}">
+            {% if data.waltermart_price %}
+                ₱<span class="price-value">{{ data.waltermart_price }}</span>
+            {% else %}
+                <span class="no-click">No Record Found</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="5">No favorite products added yet.</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+<br><br><br><hr><br><br><br>
+
+<h2>Saved Favorites</h2><hr><br><br>
+<table>
+    <!-- Header for saved favorites -->
+    <tr>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Image</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Title</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Selected Price</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Supermarket</th>
+        <th style="font-size: 20px; text-align: center;font-weight: bold;">Action</th>
+        
+        <!-- Add other details as needed -->
+    </tr>
+    <!-- Loop through saved favorites and display each row -->
+    {% for favorite in saved_favorites %}
+        <!-- Display favorite details -->
+        <tr>
+            <td style="font-size: 22px"><img src="{{ favorite.image }}" alt="" style="width: 40%;"></td>
+            <td style="font-size: 22px" class="title-container">{{ favorite.title }}</td>
+            <td style="font-size: 22px">₱{{ favorite.price|floatformat:2 }}</td>
+            <td style="font-size: 22px">{{ favorite.supermarket }}</td>
+            <td style="font-size: 22px">
+                <a class="remove-favorite-btn" data-favorite-id="{{ favorite.favorite_id }}"><i class="fa-solid fa-trash" style="color: #e22c2c;" data-batch-identifier="{{ batch_identifier }}"></i></a>
+            </td>
+            <!-- Add other details as needed -->
+        </tr>
+    {% empty %}
+        <!-- Display a message if there are no saved favorites -->
+        <tr>
+            <td colspan="5">No saved favorites yet.</td>
+        </tr>
+    {% endfor %}
+</table>
+<br><br><br><hr><br><br><br>
+
+
+<div class="modal" id="warningModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered text-center" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeModalButton" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    var csrf_token = "{{ csrf_token }}";
+    var favorite_products = {};
+    $(document).ready(function () {
+        const rows = $('tr');
+
+        const headers = {
+            "X-CSRFToken": csrf_token
+        };
+
+        // Function to add the "tick" icon to the cell with the cheapest price
+        function addTickMarks() {
+            rows.each(function () {
+                const cells = $(this).find('.price-cell');
+                let minPrice = null;
+                let minCell = null;
+                cells.each(function () {
+                    const priceValue = parseFloat($(this).find('.price-value').text().replace('₱', '').trim());
+                    if (!isNaN(priceValue) && (minPrice === null || priceValue < minPrice)) {
+                        minPrice = priceValue;
+                        minCell = $(this);
+                    }
+                });
+                cells.find('i').remove(); // Remove previous check icons
+                if (minCell) {
+                    minCell.append('<i class="fa fa-check" style="color: #3bb77e;"></i>');
+                }
+            });
+        }
+
+        // Add the "tick" icons upon page load
+        addTickMarks();
+
+        // Handle quantity changes and cell selection
+        rows.each(function () {
+            const quantityCell = $(this).find('.quantity');
+            const minusButton = $(this).find('.minus');
+            const plusButton = $(this).find('.plus');
+            const priceCells = $(this).find('.price-cell');
+
+            priceCells.on('click', function () {
+                const rowIndex = $(this).closest('tr').index();
+                const selectedCell = $(this);
+                if (selectedCell.hasClass('selected')) {
+                    // Deselect the clicked cell in the same row
+                    selectedCell.removeClass('selected');
+                } else {
+                    // Deselect all cells in the same row
+                    priceCells.removeClass('selected');
+                    // Select the clicked cell in the same row
+                    selectedCell.addClass('selected');
+                }
+                updateTotalPrice();
+            });
+
+            minusButton.on('click', function () {
+                let quantity = parseInt(quantityCell.text(), 10);
+                if (!isNaN(quantity) && quantity > 1) {
+                    quantity--;
+                    quantityCell.text(quantity);
+                    updateTotalPrice();
+                }
+            });
+
+            plusButton.on('click', function () {
+                let quantity = parseInt(quantityCell.text(), 10);
+                if (!isNaN(quantity)) {
+                    quantity++;
+                    quantityCell.text(quantity);
+                    updateTotalPrice();
+                }
+            });
+        });
+
+        // Add this code inside your existing document ready function
+        $('.remove-row').on('click', function () {
+            const batchIdentifier = $(this).data('batch-identifier');
+            console.log('Clicked remove icon for batchIdentifier:', batchIdentifier);
+
+            // Show the confirmation modal when the trash can icon is clicked
+            $('#confirmation-modal').show();
+
+            // Handle the confirm button click
+            $('#confirm-button').on('click', function () {
+                // If the user confirms, remove the item
+                $.ajax({
+                    type: "POST",
+                    url: "/remove-favorite/",
+                    headers: headers,
+                    data: {
+                        batch_identifier: batchIdentifier,  // Send batch_identifier to the server
+                    },
+                    success: function (data) {
+                        if (data.success) {
+                            // If the server successfully removed the batch, remove the rows on the client side
+                            console.log('Successfully removed batchIdentifier:', batchIdentifier);
+                            $(`tr[data-batch-identifier="${batchIdentifier}"]`).remove();
+                            // Update the JavaScript favorite_products object
+                            delete favorite_products[batchIdentifier];
+                            // Call the updateTotalPrice and updateColumnSums functions to update totals
+                            updateTotalPrice();
+                            updateColumnSums();
+                        }
+                    },
+                    error: function () {
+                        // Handle error here
+                    }
+                });
+                // Hide the modal after confirming
+                $('#confirmation-modal').hide();
+            });
+
+            // Handle the cancel button click
+            $('#cancel-button').on('click', function () {
+                // If the user cancels, simply hide the modal
+                $('#confirmation-modal').hide();
+            });
+        });
+
+
+        // Add a click event handler for the "Clear List" button
+        $('#clear-list-button').on('click', function () {
+            // Display the confirmation modal when the "Clear List" button is clicked
+            $('#clear-list-modal').show();
+        });
+
+        // Handle the clear list confirm button click
+        $('#clear-list-confirm-button').on('click', function () {
+        // Send an AJAX request to remove all contents of the favorites collection
+        $.ajax({
+            type: "POST",
+            url: "/clear-favorites/",
+            headers: headers,
+            success: function (data) {
+                if (data.success) {
+                    // If the server successfully cleared the favorites, remove all rows on the client side
+                    $('tr').remove(); // Remove all table rows
+                    // Display the "No favorite products added yet." message
+                    $('table').append('<tr><td colspan="5">No favorite products added yet.</td></tr>');
+                    // Clear the JavaScript favorite_products object
+                    favorite_products = {};
+                    // Call the updateTotalPrice and updateColumnSums functions to update totals
+                    updateTotalPrice();
+                    updateColumnSums();
+                }
+            },
+            error: function () {
+                // Handle error here
+            }
+        });
+        // Hide the modal after confirming
+        $('#clear-list-modal').hide();
+    });
+
+        // Handle the clear list cancel button click
+        $('#clear-list-cancel-button').on('click', function () {
+            // If the user cancels, simply hide the modal
+            $('#clear-list-modal').hide();
+        });
+
+
+
+        function updateTotalPrice() {
+            let totalPrice = 0.0;
+            rows.each(function () {
+                const selectedCell = $(this).find('.price-cell.selected');
+                if (selectedCell.length > 0) {
+                    const priceValue = parseFloat(selectedCell.find('.price-value').text().replace('₱', '').trim());
+                    let quantity = parseInt($(this).find('.quantity').text(), 10);
+                    if (!isNaN(priceValue) && !isNaN(quantity)) {
+                        totalPrice += priceValue * quantity;
+                    }
+                }
+            });
+            $('#total-price').text('₱' + totalPrice.toFixed(2));
+
+            // Call the updateColumnSums function whenever the total price updates
+            updateColumnSums();
+        }
+
+        function updateColumnSums() {
+            let puregoldSum = 0.0;
+            let shopmetroSum = 0.0;
+            let waltermartSum = 0.0;
+
+            rows.each(function () {
+                const selectedCell = $(this).find('.price-cell.selected');
+                if (selectedCell.length > 0) {
+                    const priceValue = parseFloat(selectedCell.find('.price-value').text().replace('₱', '').trim());
+                    let quantity = parseInt($(this).find('.quantity').text(), 10);
+                    if (!isNaN(priceValue) && !isNaN(quantity)) {
+                        if (selectedCell.hasClass('puregold')) {
+                            puregoldSum += (priceValue * quantity);
+                        } else if (selectedCell.hasClass('shopmetro')) {
+                            shopmetroSum += (priceValue * quantity);
+                        } else if (selectedCell.hasClass('waltermart')) {
+                            waltermartSum += (priceValue * quantity);
+                        }
+                    }
+                }
+            });
+
+            $('#column-sum-puregold').text('₱' + puregoldSum.toFixed(2));
+            $('#column-sum-shopmetro').text('₱' + shopmetroSum.toFixed(2));
+            $('#column-sum-waltermart').text('₱' + waltermartSum.toFixed(2));
+        }
+
+        // Call the updateColumnSums function when the page loads
+        updateColumnSums();
+
+
+    });
+
+
+    // New click event handler for the "Save to Favorites" button
+    $('.save-to-favorites-btn').on('click', function () {
+        const batchIdentifier = $(this).data('batch-identifier');
+        const selectedCell = $(`tr[data-batch-identifier="${batchIdentifier}"]`).find('.price-cell.selected');
+
+        if (selectedCell.length > 0) {
+            const selectedSupermarket = selectedCell.attr('class').split(' ')[1]; // Assuming class is the supermarket name
+            const selectedPrice = selectedCell.find('.price-value').text();
+
+            // Add additional data retrieval for Sept_FInal_Final collection values here
+            const additionalData = {
+                // ... (retrieve additional data from MongoDB)
+            };
+
+            // Send an AJAX request to save the data to SavedFavorites
+            $.ajax({
+                type: "POST",
+                url: "/save-to-favorites/",
+                headers: {"X-CSRFToken": csrf_token},
+                data: {
+                    batch_identifier: batchIdentifier,
+                    supermarket: selectedSupermarket,
+                    price: selectedPrice,
+                    additional_data: additionalData,
+                },
+                success: function (data) {
+                    if (data.success) {
+                        // Handle success (e.g., display a message)
+                        console.log('Successfully saved to favorites:', data.message);
+
+                        $('#warningModal .modal-title').text("Success");
+                        $('#warningModal .modal-body p').text(data.message);
+                        $('#warningModal').modal('show');
+                        window.location.reload();
+                    } else {
+                        // Handle failure (e.g., display an error message)
+                        console.error('Failed to save to favorites:', data.error);
+
+                        // Check if the error message is available before displaying
+                        const errorMessage = data.message || data.error || 'An unknown error occurred';
+                        
+                        $('#warningModal .modal-title').text("Error");
+                        $('#warningModal .modal-body p').text(errorMessage);
+                        $('#warningModal').modal('show');
+                    }
+                },
+                error: function () {
+                    // Handle error here
+                    // $('#warningModal .modal-title').text("Error");
+                    // $('#warningModal .modal-body p').text(data.error);
+                    // $('#warningModal').modal('show');
+                }
+
+            });
+        } else {
+            // Handle the case when no cell is selected
+            console.warn('No cell selected for batchIdentifier:', batchIdentifier);
+
+            $('#warningModal .modal-title').text("Warning");
+            $('#warningModal .modal-body p').text("Please select a price before saving to favorites.");
+            $('#warningModal').modal('show');
+        }
+    });
+</script>
+
+<script>
+    var csrf_token = "{{ csrf_token }}";
+    // New click event handler for the "Remove" button
+    $('.remove-favorite-btn').on('click', function () {
+        const favoriteId = $(this).data('favorite-id');
+        const currentRow = $(this).closest('tr');  // Store a reference to the current row
+
+        // Display the confirmation modal
+        $('#confirmationModal').modal('show');
+
+        // Set up a click event for the "Remove" button in the confirmation modal
+        $('#confirmRemoveBtn').one('click', function () {
+            // Send an AJAX request to remove the favorite item
+            $.ajax({
+                type: "POST",
+                url: "/remove-saved-favorite/",
+                headers: { "X-CSRFToken": csrf_token },
+                data: {
+                    favorite_id: favoriteId,
+                },
+                success: function (data) {
+                    if (data.success) {
+                        // Handle success (e.g., remove the row from the table)
+                        console.log('Successfully removed favorite:', data.message);
+                        currentRow.remove(); // Remove the row from the table
+                    } else {
+                        // Handle failure (e.g., display an error message)
+                        console.error('Failed to remove favorite:', data.error);
+                    }
+                },
+                error: function () {
+                    // Handle error here
+                }
+            });
+
+            // Close the confirmation modal
+            $('#confirmationModal').modal('hide');
+        });
+    });
+</script>
+
+<script>
+    // Add this script to your page to handle the no-click class
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all elements with the no-click class
+        var noClickElements = document.querySelectorAll('.no-click');
+
+        // Loop through the elements and set pointer-events to none
+        noClickElements.forEach(function(element) {
+            element.style.pointerEvents = 'none';
+        });
+    });
+</script>
+
+
+
+<style>
+    .price-cell.selected {
+        border: 3px solid #3bb77e;
+        padding: 4px; /* Add padding to make the border thicker on all sides */
+    }
+</style>
+{% endblock %}

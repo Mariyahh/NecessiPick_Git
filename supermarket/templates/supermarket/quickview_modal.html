@@ -1,0 +1,98 @@
+{% load static %}
+
+
+<!-- Quick view Modal -->
+<div class="modal fade quickview-modal" id="quickviewModal{{ product_id }}" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">              
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>       
+            
+            <div class="modal-body" style="margin-top: 15px;">
+                <div class="row">
+                    <!-- Image on the left side -->
+                    <!-- <div class="col-md-6 col-sm-12 col-xs-12 mb-md-0 mb-sm-5"> -->
+                    <div class="col-lg-6 col-md-12 mb-lg-0 mb-4 d-flex align-items-center">
+                        <div class="image" style="width: 100%; max-height: 100%; object-fit: cover;" >
+                            <img src="{{ product_image }}" style="width: 100%; max-height: 100%; object-fit: cover;" alt="{{ product_title }}">
+                        </div> 
+                        
+                    </div>
+                    
+                    <!-- product info on the right side -->
+                    <!-- <div class="col-md-6 col-sm-12 col-xs-12"> -->
+                    <div class="col-lg-6 col-md-12">
+                        <div class="detail-info pr-lg-4 pr-0 pl-lg-4 pl-0">
+                            
+                            <h3 class="title-detail"><a href="" class="text-heading">{{ product_title }}</a></h3>
+                            <div class="font-xs">
+                                <ul>
+                                    <li class="mb-5">Supermarket: <span class="text-brand">{{ product_supermarket }}</span></li>
+                                </ul>
+                            </div>
+                            <div class="product-detail-rating">
+                                <div class="product-rate-cover text-end">
+                                    
+                                    <!-- LIKE AND DISLIKE BUTTON HTML FORM -->
+                                    <div class="interaction-buttons">
+                                        <span id="like-count">{{ like_count }}</span>
+                                        <button type="button" style="border: none; background: none;" class="toggle-button {% if user_interaction and user_interaction.action == 'like' %}active{% endif %}" data-action="like" data-product-id="{{ product.id }}">
+                                            <img style="height: 30px; width: 30px;" src="{% static 'icons/icon_like.png' %}">
+                                        </button> &nbsp;&nbsp;&nbsp;
+                                        <span id="dislike-count">{{ dislike_count }}</span>
+                                        <button type="button" style="border: none; background: none;" class="toggle-button {% if user_interaction and user_interaction.action == 'dislike' %}active{% endif %}" data-action="dislike" data-product-id="{{ product.id }}">
+                                            <img style="height: 30px; width: 30px;" src="{% static 'icons/icon_dislike.png' %}">
+                                        </button> 
+                                    </div>
+                                    
+                                    <!-- END LIKE AND DISLIKE BUTTON HTML FORM -->
+                                </div>
+                            </div>
+
+                            <div class="clearfix product-price-cover">
+                                <div class="product-price float-left">
+                                    {% if product.discounted_price %}
+                                    <div style="text-align: left;">
+                                        <span class="current-price text-brand" style="font-size: 55px;">{{ product.discounted_price }}</span>
+                                    </div>
+                                    
+                                    {% if product.original_price %}
+                                    <div>
+                                        <span class="old-price" style="font-size: 20px;">{{ product.original_price }}</span>
+                                    </div>
+                                    {% else %}
+                                    <div style="text-align: left;">
+                                        <span class="old-price"></span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% else %}
+                                    <div style="text-align: left;">
+                                        <span class="current-price text-brand" style="font-size: 55px;">{{ product.original_price }}</span>
+                                    </div>
+                                    <div style="text-align: left;">
+                                        <span class="old-price"></span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <a href="{{ product.url }}" class="button button-style">
+                                <i class="fi-rs-shopping-cart"></i>
+                                Visit store
+                            </a>
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+            </div> 
+
+            <!-- okay button to close the modal -->
+            <div class="noted-button">
+                <a id="notedButton" data-bs-dismiss="modal">Okay </a>
+            </div>       
+        </div>
+    </div>
+</div>
+
+
