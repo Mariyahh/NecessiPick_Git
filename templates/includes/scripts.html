@@ -1,9 +1,243 @@
-{%load static%}
-{% block content %}
+{% load static %}
 
-   <!-- Scripts -->
-   <script>
+<!-- AUTHENTICATION -->
 
+<script>
+    // Function to validate the username
+    $(document).ready(function() {
+        $('#uname').on('input', function() {
+            var username = $(this).val();
+            var csrfToken = $('input[name=csrfmiddlewaretoken]').val(); // Get the CSRF token
+
+            if (username) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/check_uname/',  // URL to check username availability
+                    data: { 'uname': username,
+                            'csrfmiddlewaretoken': csrfToken, // Include the CSRF token in the request data 
+
+                            },
+                    success: function(data) {
+                        if (data.exists) {
+                            $('#username-error').text('This username is already in use.');
+                            $('#username-error').css('color', 'red');
+
+                        } else {
+                            $('#username-error').text('');
+                        }
+                    }
+                });
+            } else {
+                $('#username-error').text('');
+            }
+        });
+    });
+</script>
+    
+<script>         
+// Function to validate the email
+    $(document).ready(function() {
+
+        $('#email').on('input', function() {
+            var email = $(this).val();
+            var csrfToken = $('input[name=csrfmiddlewaretoken]').val(); // Get the CSRF token
+
+            if (email) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/check_email/',  // URL to check email availability
+                    data: { 
+                        'email': email,
+                         'csrfmiddlewaretoken': csrfToken, // Include the CSRF token in the request data 
+                        },
+                    success: function(data) {
+                        if (data.exists) {
+                            $('#email-error').text('This email address is already in use.');
+                            $('#email-error').css('color', 'red');
+
+                        } else {
+                           // Check for additional email validation rules
+                            var errorMessage = '';
+
+                            // Check for spaces in the email
+                            if (email.indexOf(' ') !== -1) {
+                                errorMessage = 'Email should not contain spaces';
+                            }
+
+                            // Check for special characters at the beginning
+                            if (/^[^a-zA-Z0-9]/.test(email)) {
+                                errorMessage = 'Email should not start with special characters';
+                            }
+
+                            if (errorMessage) {
+                                $('#email-error').text(errorMessage);
+                                $('#email-error').css('color', 'red');
+                                disableSubmitButton()
+                            } else {
+                                $('#email-error').text('');
+
+                            }
+                        }
+                    }
+                });
+            } else {
+                enableSubmitButton();
+                
+            } 
+            
+        });
+    });
+
+    // Function to disable the submit button
+    function disableSubmitButton() {
+        var submitButton = $('#submit-button');
+        submitButton.prop('disabled', true);
+    }
+
+    // Function to enable the submit button
+    function enableSubmitButton() {
+        var submitButton = $('#submit-button');
+        submitButton.prop('disabled', false);
+    }
+</script>
+
+
+<script>     // Function to validate the password
+
+    function validatePassword() {
+        var password = document.getElementById("p_password");
+        var confirm_password = document.getElementById("confirm_password");
+        var password_error = document.getElementById("pass-validation-message");
+        var submit_button = document.getElementById("submit-button");
+
+        // Define your password validation rules
+        var hasUpperCase = /[A-Z]/.test(password.value);
+        var hasSpecialChar = /[!@#$%^&*]/.test(password.value);
+        var hasNoSpace = !/\s/.test(password.value);
+        var hasNumber = /\d/.test(password.value); 
+
+
+        // Create an array to hold error messages
+        var errorMessages = [];
+
+        // Reset the error message
+        password_error.textContent = "";
+        password_error.style.color = "red";
+
+        if (password.value.length < 8) {
+        password_error.textContent = "Password must be at least 8 characters long.";
+        disableSubmitButton();
+       
+        } else if (!hasUpperCase) {
+        password_error.textContent = "Password must contain at least one uppercase letter.";
+        disableSubmitButton();
+       
+        } else if (!hasNumber) {
+        password_error.textContent = "Password must contain a number.";
+        disableSubmitButton();
+
+        } else if (!hasSpecialChar) {
+        password_error.textContent = "Password must contain special characters.";
+        disableSubmitButton();
+       
+        } else if (!hasNoSpace) {
+        password_error.textContent = "Password should not have spaces.";
+        disableSubmitButton();
+    
+        }  else {
+        password_error.textContent = "";
+        
+        }
+    }
+    
+
+    // Function to check if passwords match
+    function checkPasswordMatch() {
+        var password = document.getElementById("p_password");
+        var confirm_password = document.getElementById("confirm_password");
+        var password_error = document.getElementById("c-pass-validation-message");
+        var submit_button = document.getElementById("submit-button");
+
+        if (confirm_password.value !== "") {
+            if (confirm_password.value !== password.value) {
+                password_error.textContent = "Password and Confirm Password do not match.";
+                password_error.style.color = "red"; // Set the text color to red
+                disableSubmitButton();
+            } else {
+                password_error.textContent = ""; // Clear the error message if passwords match
+                password_error.style.color = ""; // Remove the text color style to reset it to the default color
+                enableSubmitButton();
+            }
+        } else {
+            password_error.textContent = ""; // Clear the error message if passwords match
+            
+        }
+    }
+
+    // Attach the validatePassword function to the password and confirm_password input fields
+    document.getElementById("p_password").addEventListener("input", validatePassword);
+    document.getElementById("confirm_password").addEventListener("input", checkPasswordMatch); 
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<script> 
+    // Function to toggle password visibility for LOGIN
+    function togglePasswordVisibility(inputId, toggleId) {
+        var passwordInput = document.getElementById(inputId);
+        var toggleIcon = document.getElementById(toggleId);
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleIcon.classList.remove("fa-eye-slash");
+            toggleIcon.classList.add("fa-eye");
+        } else {
+            passwordInput.type = "password";
+            toggleIcon.classList.remove("fa-eye");
+            toggleIcon.classList.add("fa-eye-slash");
+        }
+    }
+
+    // Attach the togglePasswordVisibility function to the toggle buttons
+    document.getElementById("pass-toggle").addEventListener("click", function() {
+        togglePasswordVisibility("password", "pass-toggle");
+    });
+    // document.getElementById("confirm-pass-toggle").addEventListener("click", function() {
+    //     togglePasswordVisibility("confirm_password", "confirm-pass-toggle");
+    // });
+</script>
+
+<script> 
+    // Function to toggle password visibility for REGISTER
+    function reg_togglePasswordVisibility(inputId, toggleId) {
+        var passwordInput = document.getElementById(inputId);
+        var toggleIcon = document.getElementById(toggleId);
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleIcon.classList.remove("fa-eye-slash");
+            toggleIcon.classList.add("fa-eye");
+        } else {
+            passwordInput.type = "password";
+            toggleIcon.classList.remove("fa-eye");
+            toggleIcon.classList.add("fa-eye-slash");
+        }
+    }
+
+    // Attach the togglePasswordVisibility function to the toggle buttons
+    document.getElementById("p-toggle").addEventListener("click", function() {
+        reg_togglePasswordVisibility("p_password", "p-toggle");
+    });
+    document.getElementById("confirm-p-toggle").addEventListener("click", function() {
+        reg_togglePasswordVisibility("confirm_password", "confirm-p-toggle");
+    });
+</script>
+
+
+
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- In general -->
+<script>
     // Compare Modal
     function openCompareModal(productId) {
         // Use AJAX to fetch the modal content dynamically
@@ -21,66 +255,178 @@
                 alert("Failed to load modal content.");
             }
         });
-       
+
     }
 
+    // Quick view Modal
+    function openQuickViewModal(productId) {
+        // Use AJAX to fetch the modal content dynamically
+        $.ajax({
+            url: "{% url 'supermarket:quickview_modal' 0 %}".replace('0', productId),
+            type: "GET",
+            success: function (data) {
+                // Append the modal content to the modal container
+                $('#quickviewModalContainer').html(data);
 
-    // Retrieve the price history data from the Django context as a JSON string
-    const formattedPriceHistoryData = JSON.parse('{{ formatted_price_history_json|escapejs }}');
-    
-    // Check if price history data is available
-    if (formattedPriceHistoryData.length > 0) {
-        // Log a message to the browser console
-        console.log('Formatted price history data is available:', formattedPriceHistoryData);
-    
-        // Extract the price and date data from the formatted price history
-        const prices = formattedPriceHistoryData.map(entry => parseFloat(entry.price.replace('₱', ''))); // Convert to a number
-        const dates = formattedPriceHistoryData.map(entry => entry.date_scraped);
-    
-        // Get the canvas element and create the chart
-        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
-        const priceHistoryChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: 'Price History',
-                    data: prices,
-                    borderColor: 'rgba(152, 0, 239, 0.8)', // Line color
-                    borderWidth: 2, // Line width
-                    fill: false, // Do not fill area under the line
-                }],
+                // Show the modal
+                $('#quickviewModal').modal('show');
             },
-            options: {
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Month and Year',
-                        },
-                        ticks: {
-                            autoSkip: true,
-                            maxTicksLimit: 10, // Limit the number of visible ticks
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Price',
-                        },
-                    },
-                },
-            },
+            error: function () {
+                alert("Failed to load modal content.");
+            }
         });
-    } else {
-        // Log a message to the browser console indicating that no formatted price history data is available
-        console.log('No formatted price history data available.');
+
     }
+
+    // ==========================================================================================
+    // COMPARE MODAL FOR THE HOME TABS
+
+    // // Compare Modal Canned Goods
+    // function openCompareModal_cd(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_cd').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal_cd' + productId).modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+    // // Compare Modal Water
+    // function openCompareModal_water(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_water').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal_water'+ productId).modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+
+    // // Compare Modal Milk
+    // function openCompareModal_milk(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_milk').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal' + productId).modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+
+    //  // Compare Modal Coffee
+    //  function openCompareModal_coffee(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_coffee').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal').modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+    // // Compare Modal Noodles
+    // function openCompareModal_noodles(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_noodles').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal').modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+
+    //  // Compare Modal Laundry
+    //  function openCompareModal_laundry(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_laundry').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal').modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+    // // Compare Modal Bread
+    // function openCompareModal_bread(productId) {
+    //     // Use AJAX to fetch the modal content dynamically
+    //     $.ajax({
+    //         url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
+    //         type: "GET",
+    //         success: function (data) {
+    //             // Append the modal content to the modal container
+    //             $('#compareModalContainer_bread').html(data);
+
+    //             // Show the modal
+    //             $('#compareModal').modal('show');
+    //         },
+    //         error: function () {
+    //             alert("Failed to load modal content.");
+    //         }
+    //     });
+
+    // }
+
+
+    
 
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+
 
 <script>
     // Function to change the dropdown button image
@@ -267,6 +613,8 @@
       }
   });
 </script>
+
+
 <!-- male female -->
 <script>
     // Retrieve the histogram data from the context
@@ -308,7 +656,7 @@
   
 
   
-<!-- USERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR -->
+<!-- USERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR -->
 <script>
     var priceDistributionData = JSON.parse('{{ price_distribution_data_json|escapejs }}');
     console.log('Parsed priceDistributionData:', priceDistributionData);
@@ -722,65 +1070,6 @@ var myChart;
 updateChartData('all');
 </script>
 
-<!-- <script>
-    var ctx = document.getElementById('scatterChart').getContext('2d');
-
-    // Get the scatter plot data from the context
-    var scatterData = JSON.parse('{{ scatter_data_json|escapejs }}');
-
-    var data = {
-        datasets: [{
-            label: '',
-            data: scatterData,
-            pointBackgroundColor: 'rgba(75, 192, 192, 0.5)',
-            pointRadius: 5,
-            showLine: false,
-            // Add tooltips
-            tooltips: {
-                callbacks: {
-                    // Customize tooltip text
-                    label: function(context) {
-                        var x = context.parsed.x;
-                        var y = context.parsed.y;
-                        var title = scatterData[context.dataIndex].title; // Get the title for this data point
-
-                        return 'Title: ' + title + '\nOriginal Price = ' + x + '\nDiscounted Price = ' + y;
-                    }
-                }
-            }
-        }]
-    };
-
-    var options = {
-        responsive: true,
-        scales: {
-            x: {
-                type: 'linear',
-                position: 'bottom',
-                title: {
-                    display: true,
-                    text: 'Original Price'
-                }
-            },
-            y: {
-                type: 'linear',
-                position: 'left',
-                title: {
-                    display: true,
-                    text: 'Discounted Price'
-                }
-            }
-        }
-    };
-
-    var scatterChart = new Chart(ctx, {
-        type: 'scatter',
-        data: data,
-        options: options
-    });
-</script> -->
-
-
 
 
 
@@ -872,165 +1161,291 @@ updateChartData('all');
 
 
 
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- DAPAT DAW INCLUDED SA HEADER MISMO -->
+
+<script
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2jnPx44CEvp5JTozVnNthaAQ0mOXzhzc&libraries=geometry,places&callback=initMap"
+async defer></script>
 
 <script>
+var map;
+var infowindow;
 
-    // Compare Modal
-    function openCompareModal(productId) {
-        // Use AJAX to fetch the modal content dynamically
-        $.ajax({
-            url: "{% url 'supermarket:compare_modal' 0 %}".replace('0', productId),
-            type: "GET",
-            success: function (data) {
-                // Append the modal content to the modal container
-                $('#compareModalContainer').html(data);
+function getPlaceDetails(place) {
+    const userLatLng = new google.maps.LatLng(map.getCenter().lat(), map.getCenter().lng());
+    const placeLatLng = new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng());
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(userLatLng, placeLatLng);
 
-                // Show the modal
-                $('#compareModal').modal('show');
-            },
-            error: function () {
-                alert("Failed to load modal content.");
-            }
-        });
-
-    }
-
-    // Quick view Modal
-    function openQuickViewModal(productId) {
-        // Use AJAX to fetch the modal content dynamically
-        $.ajax({
-            url: "{% url 'supermarket:quickview_modal' 0 %}".replace('0', productId),
-            type: "GET",
-            success: function (data) {
-                // Append the modal content to the modal container
-                $('#quickviewModalContainer').html(data);
-
-                // Show the modal
-                $('#quickviewModal').modal('show');
-            },
-            error: function () {
-                alert("Failed to load modal content.");
-            }
-        });
-
-    }
-
-
-    // Retrieve the price history data from the Django context as a JSON string
-    const formattedPriceHistoryData = JSON.parse('{{ formatted_price_history_json|escapejs }}');
-
-    // Check if price history data is available
-    if (formattedPriceHistoryData.length > 0) {
-        // Log a message to the browser console
-        console.log('Formatted price history data is available:', formattedPriceHistoryData);
-
-        // Extract the price and date data from the formatted price history
-        const prices = formattedPriceHistoryData.map(entry => parseFloat(entry.price.replace('₱', ''))); // Convert to a number
-        const dates = formattedPriceHistoryData.map(entry => entry.date_scraped);
-
-        // Get the canvas element and create the chart
-        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
-        const priceHistoryChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: 'Price History',
-                    data: prices,
-                    borderColor: 'rgba(152, 0, 239, 0.8)', // Line color
-                    borderWidth: 2, // Line width
-                    fill: false, // Do not fill area under the line
-                }],
-            },
-            options: {
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Month and Year',
-                        },
-                        ticks: {
-                            autoSkip: true,
-                            maxTicksLimit: 10, // Limit the number of visible ticks
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Price',
-                        },
-                    },
-                },
-            },
-        });
+    var contentString = '<div style="width:500px;height:500px; display: flex; flex-direction: column;">' +
+        '<strong style="font-size: 24px; color: #8DC63F;">' + place.name + '</strong><br>' +
+        '<strong>Distance : ' + Math.round(distance) + ' Metres </strong><br>'; // Added a line to display distance from current location
+    if (place.photos) {
+        var firstPhotoUrl = place.photos[0].getUrl();
+        contentString += '<img src="' + firstPhotoUrl + '" alt="Place photo" style="max-width:100%;height:auto; border-radius: 10px;"><br>';
     } else {
-        // Log a message to the browser console indicating that no formatted price history data is available
-        console.log('No formatted price history data available.');
+        contentString += 'No photos available<br>';
     }
+
+    contentString +=
+        '<strong style="font-weight: bold;">Address:</strong> ' + place.formatted_address + '<br>' +
+        '<strong style="font-weight: bold;">Business Status:</strong> ' + place.business_status + '<br>' +
+        '<strong style="font-weight: bold;">Rating:</strong> ' + place.rating + '<br>' +
+        '<strong style="font-weight: bold;">User Ratings:</strong> ' + place.user_ratings_total + '<br>';
+
+    var formattedWeekdays = formatWeekdayText(place.opening_hours);
+    contentString += '<div><strong style="font-weight: bold;">Hours:</strong>';
+    contentString += '<br>' + formattedWeekdays.join('<br>') + '</div>';
+
+    contentString += '</div>';
+
+    return contentString;
+}
+
+function formatWeekdayText(openingHours) {
+    var weekdays = openingHours.weekday_text;
+    var formattedWeekdays = [];
+
+    // Extract the day and time from the weekday_text
+    for (var i = 0; i < weekdays.length; i++) {
+        var parts = weekdays[i].split(' ');
+        var day = parts[0];
+        var timeRange = parts.slice(1).join(' ');
+
+        // Format time to include AM and PM
+        var formattedTime = formatTime(timeRange);
+
+        formattedWeekdays.push(day + ' ' + formattedTime);
+    }
+
+    // Move Sunday to the end
+    var sunday = formattedWeekdays.shift();
+    formattedWeekdays.push(sunday);
+
+    return formattedWeekdays;
+}
+
+// Function to format time with AM and PM
+function formatTime(rawTime) {
+    var [start, end] = rawTime.split('–').map(s => s.trim());
+    var [startHours, startMinutes] = start.split(':').map(Number);
+    var [endHours, endMinutes] = end.split(':').map(Number);
+    // Check for NaN values and set them to 0
+    if (isNaN(startHours) || isNaN(startMinutes) || isNaN(endHours) || isNaN(endMinutes)) {
+        startHours = 0;
+        startMinutes = 0;
+        endHours = 0;
+        endMinutes = 0;
+    }
+    var startAMPM = startHours >= 12 ? 'PM' : 'AM';
+    startHours = startHours % 12;
+    startHours = startHours ? startHours : 12; // Handle midnight (0:00 AM)
+    startMinutes = startMinutes < 10 ? '0' + startMinutes : startMinutes;
+
+    var endAMPM = endHours >= 12 ? 'PM' : 'AM';
+    endHours = endHours % 12;
+    endHours = endHours ? endHours : 12; // Handle midnight (0:00 AM)
+    endMinutes = endMinutes < 10 ? '0' + endMinutes : endMinutes;
+
+    return startHours + ':' + startMinutes + ' ' + startAMPM + ' – ' + endHours + ':' + endMinutes + ' ' + endAMPM;
+}
+
+function initMap() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (geoPosition) {
+            var { latitude, longitude } = geoPosition.coords;
+
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: latitude, lng: longitude },
+                zoom: 15
+            });
+
+            var markerPosition = { lat: latitude, lng: longitude };
+            var marker = new google.maps.Marker({
+                position: markerPosition,
+                map: map,
+                title: 'Your location'
+            });
+
+            infowindow = new google.maps.InfoWindow();
+            var service = new google.maps.places.PlacesService(map);
+            service.nearbySearch({
+                location: markerPosition,
+                radius: 5000,
+                type: ['supermarket']  // search for all supermarkets
+            }, processResults);
+        }, function () {
+            handleLocationError(true, infowindow, map.getCenter());
+        },
+            {
+                enableHighAccuracy: true
+            }
+        );
+    } else {
+        handleLocationError(false, infowindow, map.getCenter());
+    }
+}
+
+function handleLocationError(browserHasGeolocation, infowindow, pos) {
+    infowindow.setPosition(pos);
+    infowindow.setContent(browserHasGeolocation ?
+        'Error: The Geolocation service failed.' :
+        'Error: Your browser doesn\'t support geolocation.');
+    infowindow.open(map);
+}
+
+function processResults(results, status) {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+        for (var i = 0; i < results.length; i++) {
+            var placeNameInLowerCase = results[i].name.toLowerCase();
+            if (placeNameInLowerCase.includes('puregold') ||
+                placeNameInLowerCase.includes('waltermart') ||
+                placeNameInLowerCase.includes('metro market! market!')) {
+                createMarker(results[i]);
+            }
+        }
+    }
+}
+function createMarker(placeInfo) {
+    var icon;
+    if (placeInfo.name.toLowerCase().includes('puregold')) {
+        icon = "{% static 'icons/P.png' %}";
+    } else if (placeInfo.name.toLowerCase().includes('waltermart')) {
+        icon = "{% static 'icons/W.png' %}";
+    } else if (placeInfo.name.toLowerCase().includes('metro market! market!')) {
+        icon = "{% static 'icons/M.png' %}";
+    }
+
+    var marker = new google.maps.Marker({
+        map: map,
+        position: placeInfo.geometry.location,
+        icon: icon
+    });
+
+    var service = new google.maps.places.PlacesService(map);
+
+    google.maps.event.addListener(marker, 'click', function () {
+        service.getDetails({ placeId: placeInfo.place_id }, function (place, status) {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                infowindow.setContent(getPlaceDetails(place)); // Remove formattedWeekdays
+                infowindow.open(map, marker);
+            }
+        });
+    });
+}
 
 </script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-
 <script>
-    // Function to change the dropdown button image
-    function changeDropdownImage(imageSrc) {
-        var dropdownButton = document.querySelector('.dropdown-button');
-        dropdownButton.src = imageSrc;
-
-        // Store the selected image source in localStorage
-        localStorage.setItem('selectedSupermarketImage', imageSrc);
+// Function to open the location modal
+function openLocationModal() {
+    var modal = new bootstrap.Modal(document.getElementById("location-modal"));
+    modal.show();
+    var backdrops = document.getElementsByClassName('modal-backdrop');
+    for (var i = 0; i < backdrops.length; i++) {
+        backdrops[i].remove();
     }
+    // Initialize the map (You can put your map initialization code here)
+    initMap();
+}
 
-    // Function to retrieve the selected image source from localStorage
-    function getSelectedSupermarketImage() {
-        return localStorage.getItem('selectedSupermarketImage');
+// Function to close the location modal
+function closeLocationModal() {
+    var modal = new bootstrap.Modal(document.getElementById("location-modal"));
+    modal.hide();
+    // Remove any existing modal-backdrop elements
+    var backdrops = document.getElementsByClassName('modal-backdrop');
+    for (var i = 0; i < backdrops.length; i++) {
+        backdrops[i].remove();
     }
+}
 
-    // Attach a click event listener to the image
-    document.querySelector('.dropdown-button').addEventListener('click', function () {
-        // Find the associated dropdown menu
-        var dropdownMenu = document.querySelector('.dropdown-menu');
+// Listen for button click to open the location modal
+var showLocationButton = document.getElementById("show-location-button");
+showLocationButton.addEventListener("click", openLocationModal);
 
-        // Toggle the dropdown menu's visibility by toggling the "show" class
-        if (dropdownMenu.classList.contains('show')) {
-            dropdownMenu.classList.remove('show');
+</script>
+
+
+
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%% END  MODAL  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%-->
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+    // Handle search form submission
+    $('.form-inline').on('submit', function (event) {
+        event.preventDefault();
+
+        var searchQuery = $('#search-bar').val().trim();
+
+        if (searchQuery) {
+            // Send an AJAX request to the search view
+            $.get('{% url "home:search_results" %}', { search_query: searchQuery }, function (data) {
+                var searchResults = data.search_results;
+
+                // Display search results in the results container
+                var resultsContainer = $('#search-results');
+                resultsContainer.empty();
+
+                if (searchResults.length > 0) {
+                    searchResults.forEach(function (product) {
+                        var productLink = $('<a>')
+                            .attr('href', '/product_detail/' + product.id)
+                            .text(product.title);
+                        var listItem = $('<li>').append(productLink);
+                        resultsContainer.append(listItem);
+                    });
+                } else {
+                    resultsContainer.append('<li>No matching products found.</li>');
+                }
+            });
         } else {
-            dropdownMenu.classList.add('show');
+            // Clear search results when the search input is empty
+            $('#search-results').empty();
         }
     });
 
-    function selectSupermarket(supermarket) {
-        // Change the dropdown button image based on the selected supermarket
-        if (supermarket === 'Puregold') {
-            changeDropdownImage("{% static 'icons/puregold_horizontal.png' %}");
-        } else if (supermarket === 'ShopMetro') {
-            changeDropdownImage("{% static 'icons/shopmetro_horizontal.png' %}");
-        } else if (supermarket === 'WalterMart') {
-            changeDropdownImage("{% static 'icons/waltermart_horizontal.png' %}");
-        }
+    // Handle search form submission in the sidebar
+    $('.form-inline-sidebar').on('submit', function (event) {
+        event.preventDefault();
 
-        const currentURL = new URL(window.location.href);
+        var searchQuery = $('#search-bar-sidebar').val().trim();
 
-        // Update the URL with the selected supermarket
-        if (supermarket) {
-            currentURL.searchParams.set('supermarket', supermarket);
+        if (searchQuery) {
+            // Send an AJAX request to the search view
+           $.get('{% url "home:search_results" %}', { search_query: searchQuery }, function (data) {
+                var searchResults = data.search_results;
+
+                // Display search results in the results container
+                var resultsContainer = $('#search-results-sidebar');
+                resultsContainer.empty();
+
+                if (searchResults.length > 0) {
+                    searchResults.forEach(function (product) {
+                        var productLink = $('<a>')
+                            .attr('href', '/product_detail/' + product.id)
+                            .text(product.title);
+                        var listItem = $('<li>').append(productLink);
+                        resultsContainer.append(listItem);
+                    });
+                } else {
+                    resultsContainer.append('<li>No matching products found.</li>');
+                }
+            });
         } else {
-            currentURL.searchParams.delete('supermarket');
+            // Clear search results when the search input is empty
+            $('#search-results-container-sidebar').empty();
         }
+    });
+});
 
-        window.location.href = currentURL.toString();
-    }
-
-    // Check if a selected supermarket image is stored in localStorage and set it
-    var storedImage = getSelectedSupermarketImage();
-    if (storedImage) {
-        changeDropdownImage(storedImage);
-    }
 </script>
 
 
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
 
 
 <script src="{% static 'js/vendor/modernizr-3.6.0.min.js' %}"></script>
@@ -1054,10 +1469,10 @@ updateChartData('all');
 <script src="{% static 'js/plugins/jquery.theia.sticky.js' %}"></script>
 <script src="{% static 'js/plugins/jquery.elevatezoom.js' %}"></script>
 
+
 <!-- Template JS -->
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/shop.js' %}"></script>
 
 
 
-{% endblock %}

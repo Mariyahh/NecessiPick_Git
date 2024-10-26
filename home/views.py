@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from uuid import uuid4
 from bson import ObjectId
+from pymongo import DESCENDING
 
 from datetime import datetime  
 from django.db.models import Q
@@ -31,7 +32,7 @@ import requests
 from django.shortcuts import render, HttpResponseRedirect
 from django.conf import settings
 from django.contrib import messages
-
+from auth_system.models import UserProfile
 
 # Initialize NLTK stopwords
 nltk.download("stopwords")
@@ -177,11 +178,7 @@ def search(request):
     
     return JsonResponse({'search_results': products})
 
-def get_random_comments(num_comments):
-    comments_collection = db['Comments']
-    comments_data = list(comments_collection.find({}))
-    random_comments = random.sample(comments_data, num_comments)
-    return random_comments
+
 
 def get_product_title(product_id):
     sept_final_final_collection = db['Sept_FInal_Final']
@@ -194,7 +191,19 @@ def get_product_title(product_id):
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def about_us(request):
     return render(request, 'aboutus.html')
+# def get_random_comments(num_comments):
+#     comments_collection = db['Comments']
+#     comments_data = list(comments_collection.find({}))
+#     random_comments = random.sample(comments_data, num_comments)
+#     return random_comments
 
+def get_latest_comments(num_comments):
+    comments_collection = db['Comments']
+    
+    # Sort comments by timestamp in descending order and limit to the specified number
+    latest_comments = comments_collection.find({}).sort("timestamp", DESCENDING).limit(num_comments)
+    
+    return list(latest_comments)
 def home(request): 
    
     product_details_list = {}
@@ -233,28 +242,40 @@ def home(request):
             product['like_count'] = get_likes_count(product, dislike_like_data)
             product['dislike_count'] = get_dislikes_count(product, dislike_like_data)
 
+    def get_reaction_count(product_id, action_type):
+        return sum(1 for entry in dislike_like_data if entry['product_id'] == product_id and entry['action'] == action_type)
+
 # for comments
-    num_comments_to_fetch = 3  # Number of comments to fetch
-    random_comments = get_random_comments(num_comments_to_fetch)
+    num_comments_to_fetch = 5  # Fetch the latest 5 comments
+    latest_comments = get_latest_comments(num_comments_to_fetch)
     users_collection = db['Users']
     user_info = []
 
-    for comment in random_comments:
+    for comment in latest_comments:
         user_id = comment['user_id']
         user = users_collection.find_one({'user_id': user_id})
+
+        user_profile = UserProfile.objects.filter(user__id=user_id).first()
+        profile_picture_url = user_profile.profile_picture.url if user_profile and user_profile.profile_picture else 'default_profile.png'
 
         # Fetch the product title for the comment
         product_id = comment['product_id']
         product_title = get_product_title(product_id)
+        # Get actual like and dislike counts for each product
+        like_count = get_reaction_count(product_id, 'like')
+        dislike_count = get_reaction_count(product_id, 'dislike')
 
         user_info.append({
             'fname': user['fname'],
             'lname': user['lname'],
             'username': user['username'],
             'product_title': product_title,
-            'comment_text': comment['text']
+            'comment_text': comment['text'],
+            'profile_picture_url': profile_picture_url,
+            'dislike_count': dislike_count, # Add dislike count
+            'comment_date': comment.get('timestamp').strftime("%d/%m/%Y") if comment.get('timestamp') else "N/A"
+
         })
- 
 
 # for discounts
     random_discount = []

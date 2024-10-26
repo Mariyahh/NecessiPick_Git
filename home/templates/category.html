@@ -109,9 +109,16 @@
                     <div class="shop-product-fillter">
                         <div class="totall-product">
                             
-                            <div class="sort-by-product-area" style="border: 1px solid #777; border-radius: 10px; ">
+                            <div class="sort-by-product-area" style="border: 1px solid #777; border-radius: 10px; padding: 10px;">
+                                <div>
+                                    <h5 class="ml-35">Showing products from:</h5>
+                                    
+                                    <!-- Dropdown trigger -->
+                                    <img src="{% static 'icons/supermarkets.png' %}" alt="Dropdown" class="dropdown-button" id="dropdownMenuButton" onclick="toggleDropdown()">
+                                </div>
                                 
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <!-- Dropdown menu -->
+                                <ul class="dropdown-menu" id="supermarketDropdownMenu" aria-labelledby="dropdownMenuButton" style="display: none; position: absolute; z-index: 999; max-width: 500px;">
                                     <li class="dropdown-item" onclick="selectSupermarket('Puregold')">
                                         <img src="{% static 'icons/puregold_horizontal.png' %}" alt="Puregold">
                                     </li>
@@ -122,14 +129,8 @@
                                         <img src="{% static 'icons/waltermart_horizontal.png' %}" alt="WalterMart">
                                     </li>
                                 </ul>
-                                
-                                <div>
-                                    <h5 class="ml-35">Showing products from:</h5>
-
-                                    <img src="{% static 'icons/supermarkets.png' %}" alt="Dropdown" class="dropdown-button" id="dropdownMenuButton">
-                                    <i class="fi-rs-angle-small-down"></i>
-                                </div>
                             </div>
+                            
                             
                         
                         </div>
@@ -285,6 +286,20 @@
 
                 </div>
                 <div class="col-lg-1-5 primary-sidebar sticky-sidebar">
+                         <!-- Fillter By Price -->
+                         <div class="sidebar-widget price_range range mb-30">
+                            <h5 class="section-title style-1 mb-30 wow fadeIn animated">Filter by price</h5>
+                            <form method="GET" action="">
+                                <label for="min-price">Minimum Price:</label>
+                                <input type="number" id="min-price" name="min_price" min="0" value="{{ min_price }}">
+                                <label for="max-price">Maximum Price:</label>
+                                <input type="number" id="max-price" name="max_price" value="{{ max_price }}">
+                                <!-- Include sort_option, selected_supermarket, min_price, and max_price in the form action -->
+                                <input type="hidden" name="sort" value="{{ sort_option }}">
+                                <input type="hidden" name="supermarket" value="{{ selected_supermarket }}">
+                                <button type="submit"  class="btn btn-sm btn-default" style="margin-top: 10px;"><i class="fi-rs-filter mr-5"></i>Filter</button>
+                            </form>
+                        </div>
                     <div class="sidebar-widget widget-category-2 mb-30">
                         <h5 class="section-title style-1 mb-30 wow fadeIn animated">Category</h5>
                         <ul>
@@ -301,20 +316,7 @@
                             <li> <a href="{% url 'home:category' category_name='Laundry Aids' %}"> <img src="{% static 'imgs/theme/icons/laundry.png' %}" alt="">Laundry Aids</a><span class="count">{{ category_counts.Laundry_Aids }}</span></li>
                           </ul>
                     </div>
-                    <!-- Fillter By Price -->
-                    <div class="sidebar-widget price_range range mb-30">
-                        <h5 class="section-title style-1 mb-30 wow fadeIn animated">Filter by price</h5>
-                        <form method="GET" action="">
-                            <label for="min-price">Minimum Price:</label>
-                            <input type="number" id="min-price" name="min_price" min="0" value="{{ min_price }}">
-                            <label for="max-price">Maximum Price:</label>
-                            <input type="number" id="max-price" name="max_price" value="{{ max_price }}">
-                            <!-- Include sort_option, selected_supermarket, min_price, and max_price in the form action -->
-                            <input type="hidden" name="sort" value="{{ sort_option }}">
-                            <input type="hidden" name="supermarket" value="{{ selected_supermarket }}">
-                            <button type="submit"  class="btn btn-sm btn-default" style="margin-top: 10px;"><i class="fi-rs-filter mr-5"></i>Filter</button>
-                        </form>
-                    </div>
+               
 
                     <div class="sidebar-widget mb-30">
                         <h5 class="section-title style-1 mb-30 wow fadeIn animated">Filter by Upvote and Downvote</h5>
@@ -465,6 +467,24 @@
             $('#error-toast').toast('show');
         }
         // ---------------------------------- BINAGO ULIT
+        function toggleDropdown() {
+        var dropdown = document.getElementById("supermarketDropdownMenu");
+        if (dropdown.style.display === "none" || dropdown.style.display === "") {
+            dropdown.style.display = "block";
+        } else {
+            dropdown.style.display = "none";
+        }
+    }
+    
+    // Close dropdown if clicked outside
+    document.addEventListener("click", function(event) {
+        var dropdownButton = document.getElementById("dropdownMenuButton");
+        var dropdownMenu = document.getElementById("supermarketDropdownMenu");
+
+        if (!dropdownButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
+            dropdownMenu.style.display = "none";
+        }
+    });
     </script>
    
 

@@ -936,36 +936,42 @@
         <div class="sidebar-widget product-sidebar  mb-30 p-30 bg-grey border-radius-10">
             <h4 class="section-title style-1 mb-30 wow fadeIn animated animated animated">Review</h4>
         
-        <section id="testimonials">
-            {% for comment in random_comments %}
-            <div class="testimonial-box-container">
-                <div>
-        
-                    <div class="box-top">
-                        <div class="profile">
-                            <div class="profile-img">
-                                <img src="https://cdn4.iconfinder.com/data/icons/48-bubbles/48/30.User-256.png" />
-                            </div>
-                            <div class="name-user">
-                                <strong>{{ comment.fname }} {{ comment.lname }}</strong>
+            <section id="testimonials">
+                {% for comment in random_comments %}
+                <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; max-width: 350px; font-family: Arial, sans-serif; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; margin-right: 10px;">
+                            <img src="{{ comment.profile_picture_url }}" alt="{{ comment.username }}'s Profile Picture" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div>
+                            <strong style="font-size: 16px; color: #333;">{{ comment.fname }} {{ comment.lname }}</strong>
+                            <div style="font-size: 14px; color: #666;">
                                 <span>{{ comment.username }}</span>
                             </div>
-                        </div> 
-                        <div class="reviews">
-                           
-                            <i class="far fa-star"></i><!--Empty star-->
                         </div>
                     </div>
-                    <div class="client-comment">
-                        <strong>{{ comment.product_title }}</strong>
+                    
+                    <!-- Product Title -->
+                    <div style="font-weight: bold; color: #555; margin-top: 5px;">{{ comment.product_title }}</div>
+            
+                    <!-- Comment Text -->
+                    <div style="font-size: 14px; color: #555; margin-top: 5px;">
                         <p>{{ comment.comment_text }}</p>
                     </div>
+                    
+                    <!-- Footer with Like/Dislike and Date -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px; font-size: 14px; color: #333;">
+                            <span><i class="far fa-thumbs-up" style="margin-right: 5px;"></i>{{ comment.like_count }}</span>
+                            <span><i class="far fa-thumbs-down" style="margin-right: 5px;"></i>{{ comment.dislike_count }}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            <span>{{ comment.comment_date }}</span>
+                        </div>
+                    </div>
                 </div>
-                </div>
-                <br><br>
-                <br>
                 {% endfor %}
-          </section>
+            </section>
     </div>
     </div>
 </div>
