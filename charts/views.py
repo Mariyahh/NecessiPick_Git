@@ -18,6 +18,7 @@ client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5g
 db = client['Product_Comparison_System']
 collection = db['Sept_FInal_Final']
 
+
 def format_price(price_str):
     # Clean the price by removing non-numeric characters and the peso sign (₱)
     cleaned_price_str = re.sub(r'[^\d.]', '', price_str)
@@ -154,6 +155,31 @@ def get_products_with_price_history():
 # -------------------------------------------------------------------------------------------------------------------------------------------
 
 def chart1(request):
+
+    dislike_like_collection = db['ProductLikesDislikes']
+    # Retrieve the top 10 most liked products
+    top_10_liked_products = list(dislike_like_collection.aggregate([
+        {"$match": {"action": "like"}},  # Filter for "like" actions
+        {"$group": {"_id": "$product_id", "total_likes": {"$sum": 1}}},  # Group by product_id and count likes
+        {"$sort": {"total_likes": -1}},  # Sort by likes in descending order
+        {"$limit": 10}  # Get the top 10 liked products
+    ]))
+
+    # Retrieve details for each product in the top 10 list
+    liked_products_data = []
+    for product in top_10_liked_products:
+        product_info = collection.find_one({"id": product["_id"]}, {"title": 1, "image": 1, "supermarket": 1})
+        if product_info:
+            liked_products_data.append({
+                "name": product_info.get("title"),
+                "image": product_info.get("image"),  # Use "image" field instead of "image_url"
+                "likes": product["total_likes"],
+                "supermarket": product_info.get("supermarket")
+            })
+
+    # Add the liked_products_data to the context
+
+
     # Fetch the data from MongoDB
     data = list(collection.find({}, {'supermarket': 1, 'category': 1, 'original_price': 1, 'discounted_price': 1, 'title': 1}))
 
@@ -370,59 +396,6 @@ def chart1(request):
     discounted_vs_regular_prices_data = calculate_discounted_vs_regular_prices(data)
     discounted_vs_regular_prices_json = json.dumps(discounted_vs_regular_prices_data)
 
-#--------------------------------------------------------------------------------------------------------------------------------------------
-
-    # scatter_data = [{'x': item['original_price'], 'y': item.get('discounted_price', 0.0)} for item in data]
-    # Extract product titles to be used in tooltips
-    # product_titles = [{'title': item['title'],} for item in data]
-
-    # Convert the scatter plot data and product titles to JSON format for JavaScript
-    # scatter_data_json = json.dumps(scatter_data)
-    # product_titles_json = json.dumps(product_titles)
-
-    # Get all products that have price history
-    #  # Get all products that have price history
-    # products_with_price_history = list(collection.find({}, { 'id': 1, 'price_history': 1 }))
-    # # Prepare data to pass to the template
-    # product_data = []
-
-
-    # for product in products_with_price_history:
-    #     product_id = str(product['id'])
-    #     price_history = product.get('price_history', [])
-
-    #     title = collection.find_one({'id': product_id}, {'title': 1})
-    #     product_title = title.get('title', 'Unknown Title')
-    #     dates = []
-    #     prices = []
-
-            
-    #     for entry in price_history:
-    #         # assuming date_scraped is in '2023-09-24T00:00:00.000Z' format
-    #         date_scraped = entry.get('date_scraped')
-    #         if date_scraped:
-    #             # split date and time, format it to 'Sep 24, 2023'
-    #             date = datetime.strptime(date_scraped.split("T")[0], "%Y-%m-%d").strftime("%b %d, %Y")
-    #             dates.append(date)
-            
-    #         price = entry.get('price')
-    #         if price:
-    #             # assuming price is in '₱1,116.00' format
-    #             price = float(price.replace('₱', '').replace(',', ''))
-    #             prices.append(price)
-                
-    #     if dates and prices:
-    #         # Convert the data to JSON format for JavaScript
-    #         dates_json = json.dumps(dates)
-    #         prices_json = json.dumps(prices)
-    #         product_data.append({
-    #             'product_id': product_id,
-    #             'dates_json': dates_json,
-    #             'prices_json': prices_json,
-    #             'title': product_title,  # Include the title in the data
-
-    #         })
-
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -458,6 +431,7 @@ def chart1(request):
                 'dates_json': dates_json,
                 'prices_json': prices_json,
             })
+    
     #---------------------------------------------------------USER USER USER------------------------------------------
 
 
@@ -603,7 +577,8 @@ def chart1(request):
         'most_disliked_total_count': most_disliked_total_count,  
         'most_common_purpose': most_common_purpose,  # Add the most common purpose to the context
         'most_common_count': most_common_count,
-        'purpose_counts_json':purpose_counts_json
+        'purpose_counts_json':purpose_counts_json,
+        'liked_products_data': liked_products_data,
         
 
  # Convert the product data to JSON for JavaScript
