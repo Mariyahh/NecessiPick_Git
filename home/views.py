@@ -196,6 +196,36 @@ def about_us(request):
 #     comments_data = list(comments_collection.find({}))
 #     random_comments = random.sample(comments_data, num_comments)
 #     return random_comments
+def discounts(request):
+    # Fetch products with discounted prices
+    discounted_products = list(collection.find({'discounted_price': {'$exists': True}}))
+
+    # Get the selected supermarket from query parameters
+    selected_supermarket = request.GET.get('supermarket')
+
+    # Filter products if a supermarket is selected
+    if selected_supermarket:
+        discounted_products = [product for product in discounted_products if product['supermarket'] == selected_supermarket]
+
+    # Implement pagination
+    paginator = Paginator(discounted_products, 15)
+    page = request.GET.get('page')
+
+    try:
+        product_page = paginator.page(page)
+    except PageNotAnInteger:
+        product_page = paginator.page(1)
+    except EmptyPage:
+        product_page = paginator.page(paginator.num_pages)
+
+    # Pass the selected supermarket to the context
+    context = {
+        'discounted_products': product_page,
+        'selected_supermarket': selected_supermarket,
+    }
+
+    return render(request, 'discounts.html', context)
+
 
 def get_latest_comments(num_comments):
     comments_collection = db['Comments']
