@@ -97,103 +97,109 @@ def scrape_category(category, url):
 
 
 def update_shopmetro_products():
-    # Fetch all products for ShopMetro from MongoDB
-    shopmetro_products = collection.find({"supermarket": "ShopMetro"})
-    products_by_category = {}
-
-    # Group products by category
-    for product in shopmetro_products:
-        category = product['category']
-        if category not in products_by_category:
-            products_by_category[category] = []
-        products_by_category[category].append(product)
+    """Update ShopMetro products in the MongoDB."""
+    print("[INFO] Fetching existing products for supermarket 'ShopMetro' from MongoDB.")
+    
+    # Fetch all existing products for "ShopMetro"
+    shopmetro_products = list(collection.find({"supermarket": "ShopMetro"}))
+    
+    # Create a set of normalized (title, url) pairs for efficient lookup
+    existing_products_map = {
+        (p['title'].strip().lower(), p['url'].strip().lower()): p for p in shopmetro_products
+    }
 
     updated_count = 0
     new_count = 0
     failed_count = 0
 
-    # Process each category
+    print("[INFO] Starting update process for ShopMetro categories.")
     for category, url in category_urls.items():
-        if category not in products_by_category:
-            print(f"No products in MongoDB for category: {category}")
-            continue
-
-        # Scrape products from category page
+        print(f"\n[INFO] Processing category: {category}")
         try:
+            # Scrape products for the current category
             scraped_products = scrape_category(category, url)
-            existing_products = {p['url']: p for p in products_by_category[category]}
-
+            
             for scraped_product in scraped_products:
-                url = scraped_product['url']
-                title = scraped_product['title']
+                title = scraped_product['title'].strip()
+                product_url = scraped_product['url'].strip()
                 new_original_price = scraped_product['original_price']
                 new_discounted_price = scraped_product['discounted_price']
+                normalized_key = (title.lower(), product_url.lower())
 
-                # Check if product exists in MongoDB
-                if url in existing_products:
-                    product = existing_products[url]
-                    old_original_price = product.get('original_price', None)
-                    old_discounted_price = product.get('discounted_price', None)
-                    price_history = product.get('price_history', [])
+                # Check if product exists using normalized title and url as unique identifiers
+                if normalized_key in existing_products_map:
+                    # Existing product: update prices if they have changed
+                    existing_product = existing_products_map[normalized_key]
+                    old_original_price = existing_product.get('original_price', None)
+                    old_discounted_price = existing_product.get('discounted_price', None)
+                    price_history = existing_product.get('price_history', [])
+
+                    updates = {}
 
                     # Update original price if it has changed
                     if old_original_price != new_original_price:
                         current_date = datetime.now().isoformat()
-                        # Add old price to history if not already added
-                        if not price_history:
+                        
+                        # Append the old price to the price history
+                        if old_original_price:
                             price_history.append({
                                 "price": old_original_price,
-                                "date_scraped": current_date
+                                "date_scraped": existing_product.get('date_scraped', '2023-09-01T00:00:00')  # Default to September 2023
                             })
-
-                        # Update original price in MongoDB
-                        collection.update_one(
-                            {'_id': product['_id']},
-                            {
-                                '$set': {
-                                    'original_price': new_original_price,
-                                    'price_history': price_history,
-                                }
-                            }
-                        )
-                        print(f"Updated original price for '{title}' to {new_original_price}")
-                        updated_count += 1
+                        
+                        # Append the new price to the price history
+                        price_history.append({
+                            "price": new_original_price,
+                            "date_scraped": current_date
+                        })
+                        
+                        updates['original_price'] = new_original_price
+                        updates['price_history'] = price_history
+                        print(f"[INFO] Updated original price for '{title}' from {old_original_price} to {new_original_price}")
 
                     # Update discounted price if it has changed
                     if old_discounted_price != new_discounted_price:
-                        collection.update_one(
-                            {'_id': product['_id']},
-                            {'$set': {'discounted_price': new_discounted_price}}
-                        )
-                        print(f"Updated discounted price for '{title}' to {new_discounted_price}")
-                        updated_count += 1
+                        updates['discounted_price'] = new_discounted_price
+                        print(f"[INFO] Updated discounted price for '{title}' from {old_discounted_price} to {new_discounted_price}")
 
+                    # Apply updates if there are any
+                    if updates:
+                        collection.update_one({'_id': existing_product['_id']}, {'$set': updates})
+                        updated_count += 1
                 else:
-                    # New product, insert into MongoDB
-                    collection.insert_one({
-                        'id': scraped_product.get('id'),
-                        'title': title,
-                        'url': url,
-                        'image': scraped_product.get('image'),
-                        'original_price': new_original_price,
-                        'discounted_price': new_discounted_price,
-                        'price_history': [  # Only add history for the original price
-                            {
-                                "price": new_original_price,
-                                "date_scraped": datetime.now().isoformat()
-                            }
-                        ] if new_original_price else [],
-                        'supermarket': 'ShopMetro',
-                        'category': category,
-                    })
-                    print(f"Added new product '{title}' with original price {new_original_price} and discounted price {new_discounted_price}")
-                    new_count += 1
+                    # If the product is not in the existing_products_map, add it
+                    if normalized_key not in existing_products_map:
+                        new_product = {
+                            'title': title,
+                            'url': product_url,
+                            'image': scraped_product['image'],
+                            'original_price': new_original_price,
+                            'discounted_price': new_discounted_price,
+                            'price_history': [
+                                {
+                                    "price": new_original_price,
+                                    "date_scraped": datetime.now().isoformat()
+                                }
+                            ] if new_original_price else [],
+                            'supermarket': 'ShopMetro',
+                            'category': category,
+                        }
+                        result = collection.insert_one(new_product)
+                        # Update the map with the new product
+                        existing_products_map[normalized_key] = new_product
+                        collection.update_one({'_id': result.inserted_id}, {'$set': {'id': str(result.inserted_id)}})
+                        print(f"[INFO] Added new product: '{title}' with original price {new_original_price}")
+                        new_count += 1
+
         except Exception as e:
-            print(f"Error processing category {category}: {e}")
+            print(f"[ERROR] Failed to process category {category}: {e}")
             traceback.print_exc()
             failed_count += 1
 
-    print(f"\nUpdate completed. Updated {updated_count} products, added {new_count} new products, failed {failed_count} categories.")
+    print(f"\n[INFO] Update process complete. Summary:")
+    print(f"[INFO] Products updated: {updated_count}")
+    print(f"[INFO] New products added: {new_count}")
+    print(f"[INFO] Categories failed: {failed_count}")
 
 
 # Run the updater

@@ -5,18 +5,18 @@ client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5g
 db = client['Product_Comparison_System']
 collection = db['Sept_FInal_Final']
 
-def remove_duplicates_shopmetro():
-    """Remove duplicate ShopMetro products from MongoDB."""
-    print("[INFO] Starting duplicate removal for 'ShopMetro' products.")
+def remove_duplicates_puregold():
+    """Remove duplicate Puregold products from MongoDB."""
+    print("[INFO] Starting duplicate removal for 'Puregold' products.")
 
-    # Fetch all products with 'supermarket': 'ShopMetro'
-    shopmetro_products = list(collection.find({"supermarket": "ShopMetro"}))
+    # Fetch all products with 'supermarket': 'Puregold'
+    puregold_products = list(collection.find({"supermarket": "Puregold"}))
     duplicates_removed = 0
 
     # Dictionary to track unique products by normalized (title, url)
     unique_products = {}
 
-    for product in shopmetro_products:
+    for product in puregold_products:
         # Normalize title and url to avoid duplicates due to minor differences
         normalized_title = product['title'].strip().lower() if 'title' in product else ''
         normalized_url = product['url'].strip().lower().replace(" ", "") if 'url' in product else ''
@@ -55,4 +55,4 @@ def remove_duplicates_shopmetro():
     print(f"[INFO] Total duplicates removed: {duplicates_removed}")
 
 # Run the script
-remove_duplicates_shopmetro()
+remove_duplicates_puregold()
