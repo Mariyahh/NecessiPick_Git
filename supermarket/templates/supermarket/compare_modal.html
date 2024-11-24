@@ -1,353 +1,215 @@
-<style>
-    /* CSS for product cards */
-  
+<div
+  class="modal fade compare-modal"
+  id="compareModal{{ product_id }}"
+  tabindex="-1"
+  aria-labelledby="quickViewModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="modal"
+        aria-label="Close"
+      ></button>
+      <div class="modal-body">
+        <div class="row">
+          <h2 style="text-align: center">Compare Products</h2>
+          <br /><br /><br />
 
-    .modal-body{
-        
-        /* overflow: auto; */
-    }
-    #comparison-results{
-        display: inline-block;
-        overflow: auto;
-
-    }
-
-    .product-card {
-        position: linear;
-        width: 400px; /* Adjust the width as needed */
-        max-width: 300px;
-        max-height: 420px;
-        padding: 0px;
-        margin: 10px;
-        border-radius: 25px;
-    }
-
-    .product-info{
-        position: relative;
-        max-width: 350px;
-        display: block;
-        font-weight: 700;
-    }
-
-    .product-info h5 a{
-        font-size: 18px;
-        max-width: 300px;
-        font-weight: 700;
-        color: #253D4E;
-    }
-
-    .product-info h3 a:hover{
-        color: #3BB77E;
-    }
-
-    .product-price{
-        color: #3BB77E;
-        text-align: center;
-        font-size: 20px;
-        font-weight: 700;
-        margin-top: 10px;
-    }
-
-    /* CSS for product images */
-    .product-image img {
-        max-width: 50%; /* Make sure the image fits within the product card */
-        height: 200px; /* Maintain the image's aspect ratio */
-        width: 200px;
-        padding-top: 15px;
-        display: block; /* Remove any extra spacing */
-        margin: 0 auto; /* Center the image horizontally */
-    }
-</style>
-
-<!-- Compare Modal -->
-<div class="modal fade compare-modal" id="compareModal{{ product_id }}" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" >              
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>       
-            
-            <div class="modal-body">
-                <div class="row">
-
-                    <!-- card -->
-                    <h2 style="text-align: center;">Compare Products</h2><br>
-                    <br><br>
-
-                    <!-- Add code to display similar products here -->
-                    <div id="comparison-results" class="d-flex flex-row flex-nowrap" >
-                        <!-- Comparison results will be displayed here -->
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;  border: 3px solid #10a141;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ product_supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ product_image }}" alt="{{ product_title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ product_title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ product_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% for similar_product in similar_products %}
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ similar_product.supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ similar_product.image }}" alt="{{ similar_product.title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ similar_product.title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ similar_product.original_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-
-                        
+          <!-- Similar Products -->
+          <div class="left-column" id="comparison-results">
+            <div class="d-flex flex-row flex-nowrap">
+              <div class="d-flex flex-wrap justify-content-center">
+                <!-- Selected Product -->
+                <div class="col-lg-4 col-md-6 col-sm-12">
+                  <div
+                    class="product-cart-wrap mb-30"
+                    style="border: 3px solid #10a141"
+                  >
+                    <h4 style="text-align: center; padding-top: 10px">
+                      {{ product_supermarket }}
+                    </h4>
+                    <div class="product-img-action-wrap">
+                      <div class="product-img product-img-zoom">
+                        <img
+                          src="{{ product_image }}"
+                          alt="{{ product_title }}"
+                        />
+                      </div>
                     </div>
-                </div>
-            </div> 
-
-            <div class="noted-button">
-                <a id="notedButton" data-bs-dismiss="modal">Noted! </a>
-            </div>       
-        </div>
-    </div>
-</div>
-
-<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
-
-<!-- Compate Modal -->
-<div class="modal fade compare-modal" id="compareModal_cd{{ product_id }}" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" >              
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>       
-            
-            <div class="modal-body">
-                <div class="row">
-
-                    <!-- card -->
-                    <h2 style="text-align: center;">Compare Products</h2><br>
-                    <br><br>
-
-                    <!-- Add code to display similar products here -->
-                    <div id="comparison-results" class="d-flex flex-row flex-nowrap" >
-                        <!-- Comparison results will be displayed here -->
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;  border: 3px solid #10a141;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ product_supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ product_image }}" alt="{{ product_title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ product_title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ product_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% for similar_product in similar_products %}
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ similar_product.supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ similar_product.image }}" alt="{{ similar_product.title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ similar_product.title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ similar_product.original_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-
-                        
+                    <div class="product-content-wrap text-center">
+                      <h5>{{ product_title }}</h5>
+                      <div class="product-price">
+                        Price: {{ product_price }}
+                      </div>
                     </div>
+                  </div>
                 </div>
-            </div> 
 
-            <div class="noted-button">
-                <a id="notedButton" data-bs-dismiss="modal">Noted! </a>
-            </div>       
-        </div>
-    </div>
-</div>
-
-
-
-<!-- Compate Modal Water -->
-<div class="modal fade compare-modal" id="compareModal_water{{ product_id }}" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" >              
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>       
-            
-            <div class="modal-body">
-                <div class="row">
-
-                    <!-- card -->
-                    <h2 style="text-align: center;">Compare Products</h2><br>
-                    <br><br>
-
-                    <!-- Add code to display similar products here -->
-                    <div id="comparison-results" class="d-flex flex-row flex-nowrap" >
-                        <!-- Comparison results will be displayed here -->
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;  border: 3px solid #10a141;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ product_supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ product_image }}" alt="{{ product_title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ product_title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ product_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% for similar_product in similar_products %}
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ similar_product.supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ similar_product.image }}" alt="{{ similar_product.title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ similar_product.title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ similar_product.original_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-
-                        
+                <!-- Similar Products -->
+                {% for similar_product in similar_products %}
+                <div class="col-lg-4 col-md-6 col-sm-12">
+                  <div class="product-cart-wrap mb-30">
+                    <h4 style="text-align: center; padding-top: 10px">
+                      {{ similar_product.supermarket }}
+                    </h4>
+                    <div class="product-img-action-wrap">
+                      <div class="product-img product-img-zoom">
+                        <img
+                          src="{{ similar_product.image }}"
+                          alt="{{ similar_product.title }}"
+                        />
+                      </div>
                     </div>
-                </div>
-            </div> 
-
-            <div class="noted-button">
-                <a id="notedButton" data-bs-dismiss="modal">Noted! </a>
-            </div>       
-        </div>
-    </div>
-</div>
-
-
-<!-- Compate Modal Milk -->
-<div class="modal fade compare-modal" id="compareModal_milk{{ product_id }}" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" >              
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>       
-            
-            <div class="modal-body">
-                <div class="row">
-
-                    <!-- card -->
-                    <h2 style="text-align: center;">Compare Products</h2><br>
-                    <br><br>
-
-                    <!-- Add code to display similar products here -->
-                    <div id="comparison-results" class="d-flex flex-row flex-nowrap" >
-                        <!-- Comparison results will be displayed here -->
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;  border: 3px solid #10a141;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ product_supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ product_image }}" alt="{{ product_title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ product_title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ product_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% for similar_product in similar_products %}
-                        <div class="col-lg-4 col-md-5 col-6 col-sm-8">
-                            <div class="product-cart-wrap mb-30" style="flex: 0 0 auto;">
-                                <h4 style="text-align: center; padding-top: 10px;">{{ similar_product.supermarket }}</h4>
-    
-                                <div class="product-img-action-wrap">
-                                    <div class="product-img product-img-zoom">
-                                        <img src="{{ similar_product.image }}" alt="{{ similar_product.title }}">
-                                    </div>
-                                </div><br>
-    
-                                <div class="product-content-wrap">
-                                    <h5>{{ similar_product.title }}</h5>
-                                    <div class="product-card-bottom">
-                                        <div class="product-price">
-                                            Price: {{ similar_product.original_price }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-
-                        
+                    <div class="product-content-wrap text-center">
+                      <h5>{{ similar_product.title }}</h5>
+                      <div class="product-price">
+                        Price: {{ similar_product.original_price }}
+                      </div>
                     </div>
+                  </div>
                 </div>
-            </div> 
+                {% endfor %}
+              </div>
 
-            <div class="noted-button">
-                <a id="notedButton" data-bs-dismiss="modal">Noted! </a>
-            </div>       
+              <!-- Places API Results -->
+
+              <div class="noted-button">
+                <a id="notedButton" data-bs-dismiss="modal">Noted!</a>
+              </div>
+            </div>
+          </div>
+          <div class="right-column">
+            <div>
+              <h3>Nearby Supermarkets</h3>
+
+              <!-- Section for the selected supermarket -->
+              <div class="supermarket-details mb-4">
+                <h4>Selected Supermarket: {{ product_supermarket|title }}</h4>
+                {% for detail in places_results.selected %}
+                <div class="detail-card border rounded p-3 mb-3">
+                  <h5 class="mb-2">{{ detail.name }}</h5>
+                  <p class="rating mb-1">
+                    Rating: {{ detail.rating|default:"No rating available" }}
+                  </p>
+                  <p class="mb-1">Address: {{ detail.formatted_address }}</p>
+                  <h6>Reviews:</h6>
+                  <ul>
+                    {% for review in detail.reviews %}
+                    <li>
+                      "{{ review.text|truncatewords:50 }}" -
+                      <strong>{{ review.author_name }}</strong>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endfor %}
+              </div>
+
+              <!-- Section for similar supermarkets -->
+              <div>
+                <h3>Similar Supermarkets</h3>
+                {% for supermarket, details in places_results.similar.items %}
+                <div class="supermarket-details mb-4">
+                  <h4>{{ supermarket|title }}</h4>
+                  {% for detail in details %}
+                  <div class="detail-card border rounded p-3 mb-3">
+                    <h5 class="mb-2">{{ detail.name }}</h5>
+                    <p class="rating mb-1">
+                      Rating: {{ detail.rating|default:"No rating available" }}
+                    </p>
+                    <p class="mb-1">Address: {{ detail.formatted_address }}</p>
+                    <h6>Reviews:</h6>
+                    <ul>
+                      {% for review in detail.reviews %}
+                      <li>
+                        "{{ review.text|truncatewords:50 }}" -
+                        <strong>{{ review.author_name }}</strong>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <script>
+            // Fetch user's location
+            function getUserLocation() {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  function (position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Send location to the backend
+                    fetch("/compare_modal/", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}",
+                      },
+                      body: JSON.stringify({ latitude: lat, longitude: lng }),
+                    })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        console.log("Nearby Supermarkets:", data);
+                        updateComparisonModal(data.results);
+                      })
+                      .catch((error) => console.error("Error:", error));
+                  },
+                  function (error) {
+                    console.error("Error getting location:", error.message);
+                    alert("Unable to retrieve your location.");
+                  }
+                );
+              } else {
+                alert("Geolocation is not supported by this browser.");
+              }
+            }
+
+            // Update modal with fetched data
+            function updateComparisonModal(results) {
+              const modalContent =
+                document.getElementById("comparison-results");
+              modalContent.innerHTML = ""; // Clear previous content
+
+              for (const [supermarket, details] of Object.entries(results)) {
+                const supermarketSection = document.createElement("div");
+                supermarketSection.innerHTML = `<h3>${supermarket}</h3>`;
+                details.forEach((detail) => {
+                  const detailElement = document.createElement("div");
+                  detailElement.innerHTML = `
+                <p><strong>Name:</strong> ${detail.name}</p>
+                <p><strong>Rating:</strong> ${
+                  detail.rating || "No rating available"
+                }</p>
+                <p><strong>Opening Hours:</strong></p>
+                <ul>
+                  ${
+                    detail.opening_hours?.weekday_text
+                      ? detail.opening_hours.weekday_text
+                          .map((hour) => `<li>${hour}</li>`)
+                          .join("")
+                      : "<li>Not available</li>"
+                  }
+                </ul>
+              `;
+                  supermarketSection.appendChild(detailElement);
+                });
+                modalContent.appendChild(supermarketSection);
+              }
+            }
+
+            document.addEventListener("DOMContentLoaded", getUserLocation);
+          </script>
         </div>
+      </div>
     </div>
+  </div>
 </div>

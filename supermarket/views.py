@@ -6,6 +6,10 @@ from collections import defaultdict  # Import defaultdict for category counts
 from collections import Counter
 from django.http import JsonResponse
 from bson.json_util import dumps, ObjectId  # Import dumps and ObjectId
+from django.views.decorators.csrf import csrf_exempt
+import json
+import requests
+from django.conf import settings
 
 from fuzzywuzzy import fuzz
 
@@ -15,15 +19,11 @@ from auth_system.views import like_dislike_collection as likes_dislikes_collecti
 
 
 
-# Connect to MongoDB
 client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5gsgvlz.mongodb.net/')
 db = client['Product_Comparison_System']
 collection = db['Sept_FInal_Final']
 dislike_like_collection = db['ProductLikesDislikes']
 
-
-
-# Compare function
 def find_similar_products(title, weight, brand, supermarket, collection):
     similar_products = []
 
@@ -84,38 +84,7 @@ def find_similar_products(title, weight, brand, supermarket, collection):
 
     return similar_products
 
-
-
-# Compare View/template
-def compare_modal(request, product_id):
-
-    product = collection.find_one({'id': product_id})
-
-    # Get the product title
-    product_title = product.get('title', '')
-    product_weight = product.get('weight', '')
-    product_brand = product.get('brand', '')
-    product_price = product.get('original_price', '')
-    product_supermarket = product.get('supermarket', '')
-    product_image = product.get('image', '')
-
-    # Use the find_similar_products function to find similar products
-    similar_products = find_similar_products(product_title, product_weight, product_brand, product_supermarket, collection)
-    print(f"Similar Products: {similar_products}")  # Add this print statement
-
-
-    context = {
-        'similar_products': similar_products,  # Pass the list of similar products to the template
-        'product_title': product_title,
-        'product_price': product_price,
-        'product_supermarket': product_supermarket,
-        'product_image': product_image
-    }
-    return render(request, 'supermarket/compare_modal.html', context)
-
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 # Quick View/template
 def quickview_modal(request, product_id):
@@ -355,7 +324,94 @@ def get_price(product):
     # Return None if price information is missing or cannot be converted
     return None
 
+#
 
-# Add more view functions as needed for other pages related to the supermarket
 
+def get_nearest_supermarkets(lat, lng, supermarket_name):
+    """Fetch nearest supermarkets using Google Places API."""
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    params = {
+        "location": f"{lat},{lng}",
+        "radius": 5000,
+        "keyword": supermarket_name,
+        "type": "supermarket",
+        "key": settings.GEOLOCATION_API_KEY,
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        return response.json().get("results", [])
+    return []
 
+def get_supermarket_details(place_id):
+    """Fetch supermarket details using Google Places API."""
+    url = "https://maps.googleapis.com/maps/api/place/details/json"
+    params = {
+        "place_id": place_id,
+        "fields": "name,rating,opening_hours,formatted_address,reviews",
+        "key": settings.GEOLOCATION_API_KEY,
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        result = response.json().get("result", {})
+        # Add isOpen status and limit reviews to the latest 3
+        result["isOpen"] = result.get("opening_hours", {}).get("open_now", False)
+        result["reviews"] = sorted(result.get("reviews", []), key=lambda x: x.get("time", 0), reverse=True)[:3]
+        return result
+    return {}
+
+@csrf_exempt
+def compare_modal(request, product_id=None):
+    if request.method == "GET" and product_id:
+        try:
+            # Fetch product details
+            product = collection.find_one({'id': product_id})
+
+            product_title = product.get('title', '')
+            product_weight = product.get('weight', '')
+            product_brand = product.get('brand', '')
+            product_price = product.get('original_price', '')
+            product_supermarket = product.get('supermarket', '')
+            product_image = product.get('image', '')
+
+            # Find similar products
+            similar_products = find_similar_products(
+                product_title, product_weight, product_brand, product_supermarket, collection
+            )
+
+            # Collect supermarkets from similar products and ensure the current product's supermarket is included
+            supermarket_names = [sp['supermarket'] for sp in similar_products[:2]]
+            if product_supermarket not in supermarket_names:
+                supermarket_names.append(product_supermarket)
+
+            # Fetch the two nearest supermarkets for each similar product's supermarket
+            user_lat, user_lng = 14.6407, 121.0024  # Replace with actual user location
+            places_results = {}
+
+            for supermarket in supermarket_names:
+                nearest_supermarkets = get_nearest_supermarkets(user_lat, user_lng, supermarket)
+                # Get detailed information for the two nearest supermarkets
+                details = [
+                    get_supermarket_details(s.get("place_id"))
+                    for s in nearest_supermarkets[:2]  # Take only the first two
+                    if s.get("place_id")
+                ]
+                places_results[supermarket] = details
+
+            # Prepare context for rendering
+            context = {
+    'similar_products': similar_products,
+    'product_title': product_title,
+    'product_price': product_price,
+    'product_supermarket': product_supermarket,
+    'product_image': product_image,
+    'places_results': {
+        'selected': places_results.get(product_supermarket, []),  # Selected supermarket details
+        'similar': {key: value for key, value in places_results.items() if key != product_supermarket},  # Similar supermarkets
+    },
+}
+
+            return render(request, 'supermarket/compare_modal.html', context)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)

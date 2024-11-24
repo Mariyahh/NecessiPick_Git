@@ -5,6 +5,17 @@
     <div class="header-top header-top-ptb-1 d-none d-lg-block">
         <div class="container">
             <div class="row align-items-center">
+                <div class="col-xl-3 col-lg-4">
+                    <div class="header-info">
+                        <ul>
+                            <li>About Us</li>
+                            <li>>My Account</li>
+                            <li>>Wishlist</li>
+                            <li>Order Tracking</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-xl-6 col-lg-4">
 
                 <div class="col-xl-12 col-lg-4">
                     <div class="text-center">
@@ -32,7 +43,7 @@
                             style="width: 75px; height: 90px; margin-right: 30px;"></a>
                 </div>
 
-                <div class="header-right">
+                <div class="header-right" style="width: 75%;">
                     <div class="search-style-2">
                         <div class="container">
                             <form class="form-inline" id="search-form">
@@ -46,7 +57,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>    <button id="show-location-button" class="btn btn-primary">Show Nearest Supermarket</button>
+
             </div>
         </div>
     </div>
@@ -446,182 +458,414 @@
     </div>
 </div>
 
+<!-- Location Modal -->
+<!-- Location Modal -->
+<!-- Location Modal -->
+<div class="modal fade" id="location-modal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="locationModalLabel">Supermarkets Near You</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Legends Section -->
+                <div class="legends-container text-center mb-3">
+                    <div class="d-flex justify-content-around">
+                        <div class="legend-item">
+                            <img src="{% static 'icons/P.png' %}" alt="Puregold Icon" class="legend-icon" />
+                            <h6 class="modal-title">Puregold</h6>
+                        </div>
+                        <div class="legend-item">
+                            <img src="{% static 'icons/W.png' %}" alt="Waltermart Icon" class="legend-icon" />
+                            <h6 class="modal-title">Waltermart</h6>
+                        </div>
+                        <div class="legend-item">
+                            <img src="{% static 'icons/M.png' %}" alt="Metro Market Icon" class="legend-icon" />
+                            <h6 class="modal-title">Metro Market! Market!</h6>
+                        </div>
+                    </div>
+                </div>
+                <!-- Map Section -->
+                <div id="map" style="height: 400px; width: 100%;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
 
+
 <!-- DAPAT DAW INCLUDED SA HEADER MISMO -->
 
-<script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2jnPx44CEvp5JTozVnNthaAQ0mOXzhzc&libraries=geometry,places&callback=initMap"
-    async defer></script>
 
-<script>
-    var map;
-    var infowindow;
+    <script>
+        var supermarket = "{{ product.supermarket }}"; // Assuming you have the supermarket name in a JavaScript variable.
+        var staticBaseUrl = "{% static '' %}"; // Get the base URL for static files in Django.
 
-    function getPlaceDetails(place) {
-        const userLatLng = new google.maps.LatLng(map.getCenter().lat(), map.getCenter().lng());
-        const placeLatLng = new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng());
-        const distance = google.maps.geometry.spherical.computeDistanceBetween(userLatLng, placeLatLng);
+        // Get the image element by its ID.
+        var logoImage = document.getElementById("supermarket-logo");
 
-        var contentString = '<div style="width:500px;height:500px; display: flex; flex-direction: column;">' +
-            '<strong style="font-size: 24px; color: #8DC63F;">' + place.name + '</strong><br>' +
-            '<strong>Distance : ' + Math.round(distance) + ' Metres </strong><br>'; // Added a line to display distance from current location
-        if (place.photos) {
-            var firstPhotoUrl = place.photos[0].getUrl();
-            contentString += '<img src="' + firstPhotoUrl + '" alt="Place photo" style="max-width:100%;height:auto; border-radius: 10px;"><br>';
+        // Set the image source based on the value of 'supermarket'.
+        if (supermarket === 'ShopMetro') {
+            logoImage.src = staticBaseUrl + "/icons/shopmetro.png";
+        } else if (supermarket === 'Puregold') {
+            logoImage.src = staticBaseUrl + "icons/puregold.png";
+        } else if (supermarket === 'Waltermart') {
+            logoImage.src = staticBaseUrl + "icons/waltermart.png";
         } else {
-            contentString += 'No photos available<br>';
+            // Handle the case where 'supermarket' is not one of the expected values.
+            console.error("Invalid supermarket name: " + supermarket);
+        }
+    </script>
+
+    <script>
+        var map;
+        var infowindow;
+       
+
+        function formatWeekdayText(openingHours) {
+            var weekdays = openingHours.weekday_text;
+            var formattedWeekdays = [];
+
+            // Extract the day and time from the weekday_text
+            for (var i = 0; i < weekdays.length; i++) {
+                var parts = weekdays[i].split(' ');
+                var day = parts[0];
+                var timeRange = parts.slice(1).join(' ');
+
+                // Format time to include AM and PM
+                var formattedTime = formatTime(timeRange);
+
+                formattedWeekdays.push(day + ' ' + formattedTime);
+            }
+
+            // Move Sunday to the end
+            var sunday = formattedWeekdays.shift();
+            formattedWeekdays.push(sunday);
+
+            return formattedWeekdays;
         }
 
-        contentString +=
-            '<strong style="font-weight: bold;">Address:</strong> ' + place.formatted_address + '<br>' +
-            '<strong style="font-weight: bold;">Business Status:</strong> ' + place.business_status + '<br>' +
-            '<strong style="font-weight: bold;">Rating:</strong> ' + place.rating + '<br>' +
-            '<strong style="font-weight: bold;">User Ratings:</strong> ' + place.user_ratings_total + '<br>';
+        // Function to format time with AM and PM
+        function formatTime(rawTime) {
+            var [start, end] = rawTime.split('–').map(s => s.trim());
+            var [startHours, startMinutes] = start.split(':').map(Number);
+            var [endHours, endMinutes] = end.split(':').map(Number);
+            // Check for NaN values and set them to 0
+            if (isNaN(startHours) || isNaN(startMinutes) || isNaN(endHours) || isNaN(endMinutes)) {
+                startHours = 0;
+                startMinutes = 0;
+                endHours = 0;
+                endMinutes = 0;
+            }
+            var startAMPM = startHours >= 12 ? 'PM' : 'AM';
+            startHours = startHours % 12;
+            startHours = startHours ? startHours : 12; // Handle midnight (0:00 AM)
+            startMinutes = startMinutes < 10 ? '0' + startMinutes : startMinutes;
 
-        var formattedWeekdays = formatWeekdayText(place.opening_hours);
-        contentString += '<div><strong style="font-weight: bold;">Hours:</strong>';
-        contentString += '<br>' + formattedWeekdays.join('<br>') + '</div>';
+            var endAMPM = endHours >= 12 ? 'PM' : 'AM';
+            endHours = endHours % 12;
+            endHours = endHours ? endHours : 12; // Handle midnight (0:00 AM)
+            endMinutes = endMinutes < 10 ? '0' + endMinutes : endMinutes;
 
-        contentString += '</div>';
-
-        return contentString;
-    }
-
-    function formatWeekdayText(openingHours) {
-        var weekdays = openingHours.weekday_text;
-        var formattedWeekdays = [];
-
-        // Extract the day and time from the weekday_text
-        for (var i = 0; i < weekdays.length; i++) {
-            var parts = weekdays[i].split(' ');
-            var day = parts[0];
-            var timeRange = parts.slice(1).join(' ');
-
-            // Format time to include AM and PM
-            var formattedTime = formatTime(timeRange);
-
-            formattedWeekdays.push(day + ' ' + formattedTime);
+            return startHours + ':' + startMinutes + ' ' + startAMPM + ' – ' + endHours + ':' + endMinutes + ' ' + endAMPM;
         }
 
-        // Move Sunday to the end
-        var sunday = formattedWeekdays.shift();
-        formattedWeekdays.push(sunday);
+        function initMap() {
+            var mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error('Map container not found');
+                return;
+            }
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (geoPosition) {
+                    var { latitude, longitude } = geoPosition.coords;
+                    console.log("Current Latitude: " + latitude);
+                    console.log("Current Longitude: " + longitude);
 
-        return formattedWeekdays;
-    }
+                    map = new google.maps.Map(mapElement, {
+                        center: { lat: latitude, lng: longitude },
+                        zoom: 15
+                    });
 
-    // Function to format time with AM and PM
-    function formatTime(rawTime) {
-        var [start, end] = rawTime.split('–').map(s => s.trim());
-        var [startHours, startMinutes] = start.split(':').map(Number);
-        var [endHours, endMinutes] = end.split(':').map(Number);
-        // Check for NaN values and set them to 0
-        if (isNaN(startHours) || isNaN(startMinutes) || isNaN(endHours) || isNaN(endMinutes)) {
-            startHours = 0;
-            startMinutes = 0;
-            endHours = 0;
-            endMinutes = 0;
-        }
-        var startAMPM = startHours >= 12 ? 'PM' : 'AM';
-        startHours = startHours % 12;
-        startHours = startHours ? startHours : 12; // Handle midnight (0:00 AM)
-        startMinutes = startMinutes < 10 ? '0' + startMinutes : startMinutes;
+                    var markerPosition = { lat: latitude, lng: longitude };
+                    var marker = new google.maps.Marker({
+                        position: markerPosition,
+                        map: map,
+                        title: 'Your location'
+                    });
 
-        var endAMPM = endHours >= 12 ? 'PM' : 'AM';
-        endHours = endHours % 12;
-        endHours = endHours ? endHours : 12; // Handle midnight (0:00 AM)
-        endMinutes = endMinutes < 10 ? '0' + endMinutes : endMinutes;
+                    infowindow = new google.maps.InfoWindow();
+                    processResults(); // Use your existing processResults logic
 
-        return startHours + ':' + startMinutes + ' ' + startAMPM + ' – ' + endHours + ':' + endMinutes + ' ' + endAMPM;
-    }
-
-    function initMap() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function (geoPosition) {
-                var { latitude, longitude } = geoPosition.coords;
-
-                map = new google.maps.Map(document.getElementById('map'), {
-                    center: { lat: latitude, lng: longitude },
-                    zoom: 15
-                });
-
-                var markerPosition = { lat: latitude, lng: longitude };
-                var marker = new google.maps.Marker({
-                    position: markerPosition,
-                    map: map,
-                    title: 'Your location'
-                });
-
-                infowindow = new google.maps.InfoWindow();
-                var service = new google.maps.places.PlacesService(map);
-                service.nearbySearch({
-                    location: markerPosition,
-                    radius: 5000,
-                    type: ['supermarket']  // search for all supermarkets
-                }, processResults);
-            }, function () {
-                handleLocationError(true, infowindow, map.getCenter());
-            },
-                {
-                    enableHighAccuracy: true
-                }
-            );
-        } else {
-            handleLocationError(false, infowindow, map.getCenter());
-        }
-    }
-
-    function handleLocationError(browserHasGeolocation, infowindow, pos) {
-        infowindow.setPosition(pos);
-        infowindow.setContent(browserHasGeolocation ?
-            'Error: The Geolocation service failed.' :
-            'Error: Your browser doesn\'t support geolocation.');
-        infowindow.open(map);
-    }
-
-    function processResults(results, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
-            for (var i = 0; i < results.length; i++) {
-                var placeNameInLowerCase = results[i].name.toLowerCase();
-                if (placeNameInLowerCase.includes('puregold') ||
-                    placeNameInLowerCase.includes('waltermart') ||
-                    placeNameInLowerCase.includes('metro market! market!')) {
-                    createMarker(results[i]);
-                }
+                },
+                function () {
+                    handleLocationError(true, infowindow, map.getCenter());
+                },
+                    {
+                        enableHighAccuracy: true
+                    }
+                );
+            } else {
+                handleLocationError(false, infowindow, map.getCenter());
             }
         }
-    }
-    function createMarker(placeInfo) {
-        var icon;
-        if (placeInfo.name.toLowerCase().includes('puregold')) {
-            icon = "{% static 'icons/P.png' %}";
-        } else if (placeInfo.name.toLowerCase().includes('waltermart')) {
-            icon = "{% static 'icons/W.png' %}";
-        } else if (placeInfo.name.toLowerCase().includes('metro market! market!')) {
-            icon = "{% static 'icons/M.png' %}";
+
+        function handleLocationError(browserHasGeolocation, infowindow, pos) {
+            infowindow.setPosition(pos);
+            infowindow.setContent(browserHasGeolocation ?
+                'Error: The Geolocation service failed.' :
+                'Error: Your browser doesn\'t support geolocation.');
+            infowindow.open(map);
         }
 
-        var marker = new google.maps.Marker({
-            map: map,
-            position: placeInfo.geometry.location,
-            icon: icon
-        });
-
-        var service = new google.maps.places.PlacesService(map);
-
-        google.maps.event.addListener(marker, 'click', function () {
-            service.getDetails({ placeId: placeInfo.place_id }, function (place, status) {
+        function processResults(results, status) {
+    const service = new google.maps.places.PlacesService(map);
+    const SEARCH_KEYWORDS = ["puregold", "waltermart", "metro market! market!"];
+    const promises = SEARCH_KEYWORDS.map(keyword => {
+        return new Promise((resolve, reject) => {
+            service.textSearch({
+                query: keyword,
+                location: map.getCenter(),
+                radius: 5000
+            }, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    infowindow.setContent(getPlaceDetails(place)); // Remove formattedWeekdays
-                    infowindow.open(map, marker);
+                    resolve(results);
+                } else {
+                    console.error(`Search for "${keyword}" failed:`, status);
+                    reject(status);
                 }
             });
         });
+    });
+
+    Promise.all(promises)
+        .then(responses => {
+            const combinedResults = responses.flat();
+
+            // Filter results within 5000 meters
+            const userLatLng = map.getCenter();
+            const filteredResults = combinedResults.filter(place => {
+                const placeLatLng = new google.maps.LatLng(
+                    place.geometry.location.lat(),
+                    place.geometry.location.lng()
+                );
+                const distance = google.maps.geometry.spherical.computeDistanceBetween(userLatLng, placeLatLng);
+                return distance <= 5000; 
+            });
+
+            const uniqueResults = Array.from(new Set(filteredResults.map(r => r.place_id)))
+                .map(id => filteredResults.find(r => r.place_id === id));
+
+            console.log("Filtered Unique Results:", uniqueResults);
+
+            uniqueResults.forEach(place => {
+                if (!document.querySelector(`[data-place-id="${place.place_id}"]`)) {
+                    createMarker(place);
+                }
+            });
+        })
+        .catch(error => {
+            console.error("Error performing keyword search:", error);
+            alert("Error fetching search results. Please try again later.");
+        });
+}
+
+
+
+        function createMarker(placeInfo) {
+            var icon;
+            if (placeInfo.name.toLowerCase().includes('puregold')) {
+                icon = "{% static 'icons/P.png' %}";
+            } else if (placeInfo.name.toLowerCase().includes('waltermart')) {
+                icon = "{% static 'icons/W.png' %}";
+            } else if (placeInfo.name.toLowerCase().includes('metro market! market!')) {
+                icon = "{% static 'icons/M.png' %}";
+            }
+
+            var marker = new google.maps.Marker({
+                map: map,
+                position: placeInfo.geometry.location,
+                icon: icon
+            });
+
+            var service = new google.maps.places.PlacesService(map);
+
+            google.maps.event.addListener(marker, 'click', function () {
+                service.getDetails({ placeId: placeInfo.place_id }, function (place, status) {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        infowindow.setContent(getPlaceDetails(place)); // Remove formattedWeekdays
+                        infowindow.open(map, marker);
+                    }
+                });
+            });
+        }
+
+function getPlaceDetails(place) {
+    // Ensure the map and libraries are properly initialized
+    if (!map || !google.maps.geometry || !google.maps.geometry.spherical) {
+        console.error("Google Maps library or geometry service is not loaded.");
+        return "Error: Map or geometry library not loaded.";
     }
 
-</script>
+    // User's location
+    const userLatLng = map.getCenter();
+
+    // Ensure `place.geometry.location` is in the correct format
+    let placeLatLng;
+    if (typeof place.geometry.location.lat === "function") {
+        // If `location.lat()` is a function, call it to get the value
+        placeLatLng = new google.maps.LatLng(
+            place.geometry.location.lat(),
+            place.geometry.location.lng()
+        );
+    } else {
+        // Otherwise, assume `lat` and `lng` are properties
+        placeLatLng = new google.maps.LatLng(
+            place.geometry.location.lat,
+            place.geometry.location.lng
+        );
+    }
+
+    // Distance calculation
+    let distance = "N/A";
+    try {
+        distance = Math.round(
+            google.maps.geometry.spherical.computeDistanceBetween(userLatLng, placeLatLng)
+        );
+    } catch (error) {
+        console.error("Error calculating distance:", error);
+    }
+
+    // Build content string with distance
+    const stars = Math.round(place.rating || 0);
+    const totalStars = 5;
+
+    let starHtml = "";
+    for (let i = 0; i < totalStars; i++) {
+        if (i < stars) {
+            starHtml += '<span style="color: gold;">★</span>'; // Filled star
+        } else {
+            starHtml += '<span style="color: lightgray;">★</span>'; // Empty star
+        }
+    }
+
+    // Build types string
+    const types = place.types ? place.types.join(", ") : "No types available";
+    const service = new google.maps.places.PlacesService(map);
+
+    let contentString = `
+        <div style="width:500px;height:auto; display: flex; flex-direction: column; font-family: Arial, sans-serif;">
+            <strong style="font-size: 24px; color: #8DC63F;">
+                ${place.name} ${place.rating || "N/A"} (${starHtml}) (${place.user_ratings_total || 0})
+            </strong>
+    `;
+
+    // Add photo at the top
+    if (place.photos && place.photos.length > 0) {
+        const photoUrl = place.photos[0].getUrl
+            ? place.photos[0].getUrl()
+            : "Photo URL not available";
+        contentString += `
+            <img src="${photoUrl}" alt="Place photo" style="max-width:100%; height:auto; border-radius: 10px; margin-top: 10px; margin-bottom: 10px;">
+        `;
+    } else {
+        contentString += `<p style="margin-bottom: 10px;">No photos available</p>`;
+    }
+
+    // Fetch additional details
+    service.getDetails(
+        { placeId: place.place_id, fields: ["opening_hours"] },
+        (details, status) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK) {
+                console.error("Error fetching details:", status);
+                return;
+            }
+
+            // Check if it's open now or at a specific time
+            const isOpenNow = details.opening_hours?.isOpen();
+
+            // Add open/close information
+            contentString += `
+                <strong>Open Now:</strong> ${isOpenNow ? "Yes" : "No"}<br>
+            `;
+
+            // Add opening hours if available
+            if (place.opening_hours?.weekday_text) {
+                const formattedHours = formatWeekdayText(place.opening_hours);
+                contentString += `
+                    <strong>Hours:</strong>
+                    <div style="margin-top: 5px;">
+                        ${formattedHours.join("<br>")}
+                    </div>
+                `;
+            } else {
+                contentString += `<strong>Hours:</strong> Not available<br>`;
+            }
+
+            // Update the InfoWindow with the updated content
+            infowindow.setContent(contentString);
+        }
+    );
+
+    contentString += `
+        <br>
+        <strong>Distance:</strong> ${distance !== "N/A" ? `${distance} meters` : "Not available"}
+        <br>
+        <strong>Address:</strong> ${place.vicinity || "No address provided"}
+        <br>
+        <strong>Compound Code:</strong> ${place.plus_code?.compound_code || "Not available"}
+        <br>
+        <strong>Business Status:</strong> ${place.business_status || "Not available"}
+        <br>  
+        <strong>Types:</strong> ${types}
+    
+    </div>`;
+
+    return contentString;
+}
+
+
+    </script>
+    <script>
+        // Function to open the location modal
+        function openLocationModal() {
+            var modal = new bootstrap.Modal(document.getElementById("location-modal"));
+            modal.show();
+            var backdrops = document.getElementsByClassName('modal-backdrop');
+            for (var i = 0; i < backdrops.length; i++) {
+                backdrops[i].remove();
+            }
+            // Initialize the map (You can put your map initialization code here)
+            initMap();
+        }
+
+        // Function to close the location modal
+        function closeLocationModal() {
+            var modal = new bootstrap.Modal(document.getElementById("location-modal"));
+            modal.hide();
+            // Remove any existing modal-backdrop elements
+            var backdrops = document.getElementsByClassName('modal-backdrop');
+            for (var i = 0; i < backdrops.length; i++) {
+                backdrops[i].remove();
+            }
+        }
+
+        // Listen for button click to open the location modal
+        var showLocationButton = document.getElementById("show-location-button");
+        showLocationButton.addEventListener("click", openLocationModal);
+
+    </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVhXd2OMgrjXwjcOFx0qGJwoPxswMmoGg&libraries=geometry,places&callback=initMap" async defer></script>
+
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
