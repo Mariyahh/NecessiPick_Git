@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-(4mldwfrd@+4hs(hw2h#g!l*fj()if&7qsu3v__dz0rwaakx=q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['necessipick-git.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
