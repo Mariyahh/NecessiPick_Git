@@ -208,6 +208,7 @@ EMAIL_HOST_USER = 'mnlbaltazar@tip.edu.ph'  # Your Mailjet API Key
 
 # Update with your Brevo API key
 BREVO_API_KEY = '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'
+GEOLOCATION_API_KEY = "AIzaSyDVhXd2OMgrjXwjcOFx0qGJwoPxswMmoGg"
 
 # Update with your sender email address
 EMAIL_HOST_USER = 'necessipick@gmail.com'
