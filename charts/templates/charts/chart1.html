@@ -22,13 +22,16 @@
     </div>
 
 
-
+       <div class="mt-2">
+        <h1 class="header">Hello, {{ username }}</h1>
+            <h5>Discover popular products, price trends, and customer favorites across supermarkets for smarter shopping.</h5>
+      </div> 
     <div class="row flex-row-reverse">
       <div class="col-lg-4-5">
         <section class="home-slider position-relative mb-30">
           <div class="home-slide-cover mt-30">
             <div class="card shadow" style="border: none;">
-              <div><canvas id="horizontalBarChart" style="height: 300px;"></canvas></div>
+              <div><canvas id="horizontalBarChart" style="height: 320px;"></canvas></div>
               <div class="card-body">
                 <h5 class="card-title">Number of Discounted Product per Category</h5>
                 <p class="card-text">
@@ -52,7 +55,6 @@
 
     <div class="row flex-row-reverse">
       <div class="col-lg-1-5 primary-sidebar sticky-sidebar pt-30">
-
         <div>
           <img src="{% static 'imgs/banner/3d_laptop.png' %}">
         </div>
@@ -62,7 +64,7 @@
           <div class="home-slide-cover mt-30">
             <div class="card shadow" style="border: none;">
               <div>
-                <div id="box-plot" style="height:300px"></div>
+                <div id="box-plot" style="height:320px"></div>
               </div>
               <div class="card-body">
                 <h5 class="card-title">Average Price of Products per Category</h5>
@@ -76,23 +78,47 @@
         <!--End hero-->
       </div>
     </div>
-
+    <br>  
+  
+    <div style="width: 70%; margin: 20px auto; text-align: center; font-family: Arial, sans-serif;">
+      <h3 style="margin-bottom: 16px;">Top Liked Products</h3>
+      <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden;">
+        <thead>
+          <tr style="background-color: #f4f4f9; color: #333; font-weight: bold;">
+            <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Product Image</th>
+            <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Product Name</th>
+            <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Likes</th>
+            <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Supermarket</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in liked_products_data %}
+          <tr style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0;">
+            <td style="padding: 12px; text-align: center;">
+              <img src="{{ product.image }}" alt="{{ product.name }}" style="width: 80px; height: auto; border-radius: 8px;">
+            </td>
+            <td style="padding: 12px;">{{ product.name }}</td>
+            <td style="padding: 12px; text-align: center;">{{ product.likes }}</td>
+            <td style="padding: 12px;">{{ product.supermarket }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="padding: 12px; text-align: center; color: #999;">No data available</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+  
   </div>
 
 
 
   <!--<div style="border-radius: 20px; background: #dbbfdf;width: 100%;height: 10px; margin-bottom: 2%;"> &nbsp;</div>-->
 
-  <div style="display: flex;margin-bottom: 50px;">
-    <!-- <div class="container d-flex justify-content-start align-items-start" style="width: 35%;">
-     <div>
-      <img src="{% static '/imgs/banner/cart.png' %}" style="height: 400px;margin-top: -30px;">
-      <h1 class="header">Hello,<br> name ng user<img src="{% static '/icons/icons-handwave.svg' %}"
-          style="height: 50px;margin-top: -30px;"></h1>
-    </div> --
-  </div> -->
-    <div class="container"
-      style="border-radius: 20px; background: #dbbfdf; box-shadow: 20px 20px 60px #a48fa7, -20px -20px 60px #ffefff; padding: 20px;">
+
+    <div class="container">
       <div class="row">
         <div class="col-lg-3">
           <div>
@@ -111,11 +137,8 @@
     </div>
   </div>
 
-
-
-
   <!----------------->
-  <div class="card shadow" style="border: none; background-color: white;">
+  <div class="card shadow" style="border: none; background-color: white; margin-left: 52px;margin-right: 52px;margin-top: 10px;">
     <div id="priceHistoryChart"></div>
     <div class="card-body">
       <h5 class="card-title">Price History</h5>
@@ -125,10 +148,10 @@
     </div>
   </div>
   <br><br>
-  <div class="row row-cols-1 row-cols-md-2 g-4">
+  <div class="row row-cols-1 row-cols-md-2 g-4  pa-8" style="padding-left: 2%;padding-right: 2%;">
     <div class="col">
-      <div class="card shadow" style="border: none;">
-        <div><canvas id="barChart" style="height:420px"></canvas></div>
+      <div style="border: none;height:537px;margin:30px">
+        <div><canvas  style="height:400px" id="barChart"></canvas></div>
         <div class="card-body">
           <h5 class="card-title">Total Price of Product Based on Category</h5>
           <p class="card-text">
@@ -139,9 +162,10 @@
       </div>
     </div>
     <div class="col">
-      <div class="card shadow" style="border: none;">
-        <div>
-          <canvas id="horizontalBarChart2" style="height:200px"></canvas>
+      <div style="border: none; height: 537px; margin: 30px; overflow-y: auto;">
+        <div style="max-width: 100%; overflow: hidden;">
+          <!-- Ensure the chart fills the parent div width -->
+          <canvas id="horizontalBarChart2" style="height: 400px; width: 100%"></canvas>
         </div>
         <div class="card-body">
           <h5 class="card-title">Discounted vs Regular Price</h5>
@@ -152,69 +176,75 @@
         </div>
       </div>
     </div>
+    
+    
+    
   </div>
   <!------------------>
-  <div class="container-fluid" style="padding: 5%;">
-    <div class="row justify-content-center" style=" text-align: center;">
-      <div class="col-md-3"
-        style="border-radius: 40px; background: #937de4; box-shadow: 26px 26px 52px #614cad, inset -26px -26px 52px #8f6bff; margin-right: 2%; margin-left: 20px; display: flex; flex-direction: column; align-items: center; padding: 10px;">
-        <h4 style="margin-bottom: 10px;">Top Reason why People <br>use our Website</h4>
-
-        <div style="flex: 5;">
-          <img src="{% static 'icons/reason.png' %}" style="height: 290px; width: 100%;">
-        </div>
-        <div style="flex: 1; padding-left: 10px;">
-          <h4 style="font-size: medium;">"{{ most_common_purpose }}"</h4>
-          <h4 style="font-size: medium;">Count : {{ most_common_count }}</h4>
-        </div>
-      </div>
-
-
-
-      <div class="col-md-3" style="border-radius: 40px; background: #ffc252; margin-right: 2%;">
-        <h4>Most Liked Product</h4><br>
-        <h4 style="font-size: medium;"> {{ most_liked_title }} </h4>
-        <h5 style="font-size: medium;">Original Price: {{ most_liked_original_price }}</h5>
-        <div style="border-radius: 40px; overflow: hidden;"><br>
-          <img src="{{ most_liked_image }}" alt="{{ most_liked_title }}" style="border-radius: 20px;">
-
-        </div>
-
-        <h4>{{most_liked_total_count}}&nbsp;&nbsp;
-          <!-- <img src="{% static 'icons/icon_like.png' %}" style="height: 30px;"> -->
-          <i class="fa-solid fa-thumbs-up" style="color: #3bb77e;margin-right: 10px;"></i>
+  <div style=" padding: 40px 0; font-family: 'Roboto', sans-serif;">
+    <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+  
+      <!-- Top Reason -->
+      <div style="flex: 0 0 auto; border: 3px solid #10a141; border-radius: 12px; background-color: #fff; 
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; width: 300px;">
+        <h4 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 20px;">
+          Top Reason why People<br>use our Website
         </h4>
-
-      </div>
-      <div class="col-md-3" style="border-radius: 40px; background: #34da31; margin-right: 2%;">
-        <h4>Most Disliked Product</h4><br>
-        <h4 style="font-size: medium;"> {{ most_disliked_title }} </h4>
-        <h5 style="font-size: medium;">Original Price: {{ most_disliked_original_price }}</h5>
-        <div style="border-radius: 40px; overflow: hidden;"><br>
-          <img src="{{ most_disliked_image }}" alt="{{ most_disliked_title }}" style="border-radius: 20px;">
-
+        <div style="margin-bottom: 20px;">
+          <img src="{% static 'icons/reason2.png' %}" alt="Reason Image" 
+               style="max-height: 200px; object-fit: cover; border-radius: 8px; width: 100%;">
         </div>
-
-        <h4>{{most_disliked_total_count}}&nbsp;&nbsp;<img src="{% static 'icons/dislike.png' %}" style="height: 30px;"></h4>
-
+        <p style="font-size: 1rem; color: #555; margin-bottom: 10px;">"{{ most_common_purpose }}"</p>
+        <p style="font-size: 1rem; font-weight: 500; color: #10a141;">Count: <strong>{{ most_common_count }}</strong></p>
       </div>
+  
+      <!-- Most Liked Product -->
+      <div style="flex: 0 0 auto; border: 3px solid #3bb77e; border-radius: 12px; background-color: #fff; 
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; width: 300px;">
+        <h4 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 20px;">Most Liked Product</h4>
+        <div style="margin-bottom: 20px;">
+          <img src="{{ most_liked_image }}" alt="{{ most_liked_title }}" 
+               style="max-height: 200px; object-fit: cover; border-radius: 8px; width: 100%;">
+        </div>
+        <h5 style="font-size: 1.1rem; font-weight: 500; color: #333; margin-bottom: 10px;">{{ most_liked_title }}</h5>
+        <p style="font-size: 1rem; color: #888; margin-bottom: 10px;">Original Price: <strong>{{ most_liked_original_price }}</strong></p>
+        <p style="font-size: 1rem; color: #3bb77e; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-thumbs-up" style="margin-right: 8px; font-size: 1.2rem; color: #3bb77e;"></i>{{ most_liked_total_count }}
+        </p>
+      </div>
+  
+      <!-- Most Disliked Product -->
+      <div style="flex: 0 0 auto; border: 3px solid #ff6f61; border-radius: 12px; background-color: #fff; 
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; width: 300px;">
+        <h4 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 20px;">Most Disliked Product</h4>
+        <div style="margin-bottom: 20px;">
+          <img src="{{ most_disliked_image }}" alt="{{ most_disliked_title }}" 
+               style="max-height: 200px; object-fit: cover; border-radius: 8px; width: 100%;">
+        </div>
+        <h5 style="font-size: 1.1rem; font-weight: 500; color: #333; margin-bottom: 10px;">{{ most_disliked_title }}</h5>
+        <p style="font-size: 1rem; color: #888; margin-bottom: 10px;">Original Price: <strong>{{ most_disliked_original_price }}</strong></p>
+        <p style="font-size: 1rem; color: #ff6f61; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-thumbs-down" style="margin-right: 8px; font-size: 1.2rem; color: #ff6f61;"></i>{{ most_disliked_total_count }}
+        </p>
+      </div>
+  
     </div>
   </div>
+  
   </div>
-
-  <div class="row row-cols-1 row-cols-md-2 g-4">
-    <div class="col">
-      <div class="card shadow" style="border: none; background-color: white;">
-        <div style="height:700px"><canvas id="doughnutChart"></canvas></div>
-        <div class="card-body">
-          <h5 class="card-title">Number of Products per Supermarket</h5>
-          <p class="card-text">
-            The pie chart indicates the toal count of products in each supermarekt in the database
-          </p>
-        </div>
-      </div>
+  <div style="border: none; background-color: white; flex-direction: column; align-items: center;">
+    <div style="height: 700px; display: flex; justify-content: center; align-items: center;">
+      <canvas id="doughnutChart"></canvas>
     </div>
-    <div class="col">
+    <div class="card-body" style="text-align: center;">
+      <h5 class="card-title">Number of Products per Supermarket</h5>
+      <p class="card-text">
+        The pie chart indicates the total count of products in each supermarket in the database.
+      </p>
+    </div>
+  </div>
+  
+    <!-- <div class="col">
       <div class="card shadow" style="border: none; background-color: white;">
         <div style="height:700px"><canvas id="pieChart"></canvas></div>
 
@@ -225,16 +255,10 @@
           </p>
         </div>
       </div>
-    </div>
+    </div> -->
 
-  </div>
 
-  <div style="display: flex;margin-bottom: 50px;padding: 4%;">
-
-    <div class="container" style="border-radius: 20px;
-  background: #b4f16b;
-  box-shadow:  20px 20px 41px #87b550,
-               -20px -20px 41px #e1ff86; padding: 20px;">
+    <div class="container">
       <br><br>
       <div class="row">
         <div class="col-lg-3">
@@ -250,91 +274,25 @@
         </div>
       </div>
     </div>
-    <div class="container d-flex justify-content-start align-items-start" style="width: 35%;">
-      <div>
-        <img src="" style="height: 400px;margin-top: -30px;">
-        <h1 class="header">User <br> Dashboard<img src="" style="height: 50px;"></h1>
+   
+    <div class="container">
+      <br><br>
+      <div class="row">
+        <div class="col-lg-3">
+          <div>
+            <h2>Birthday Count</h2>
+            <p>Shows the count of users based on their birthdate</p>
+          </div>
+        </div>
+        <div class="col-lg-9">
+          <div class="col-md-12">
+            <div id="birthday-chart" style="height:400px"></div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col">
-    <div class="card shadow" style="border: none; background-color: white;">
-      <div id="birthday-chart"></div>
-      <div class="card-body">
-        <h5 class="card-title">Birthday Count</h5>
-        <p class="card-text">
-          Shows the count of users based on their birthdate
-        </p>
-      </div>
-    </div>
-
-  </div>
-  <br>  
-  <h3 style="margin-bottom: 16px;">Top Liked Products</h3>
-
-  <div style="width: 70%; margin: 20px auto; font-family: Arial, sans-serif;">
-    <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden;">
-        <thead>
-            <tr style="background-color: #f4f4f9; color: #333;">
-                <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Product Image</th>
-                <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Product Name</th>
-                <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Likes</th>
-                <th style="padding: 12px; border-bottom: 2px solid #e0e0e0;">Supermarket</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in liked_products_data %}
-            <tr style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px; text-align: center;">
-                  <img src="{{ product.image }}" alt="{{ product.name }}" style="width: 80px; height: auto; border-radius: 8px;">
-                </td>
-                <td style="padding: 12px;">{{ product.name }}</td>
-                <td style="padding: 12px; text-align: center;">{{ product.likes }}</td>
-                <td style="padding: 12px;">{{ product.supermarket }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" style="padding: 12px; text-align: center; color: #999;">No data available</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-
-
   
-<!-- 
-  <div class="col">
-    <div class="card shadow" style="border: none; background-color: white;">
-      <div id="heatmap-plot"></div>
-      <div class="card-body">
-        <h5 class="card-title"> Products Likes and Dislikes</h5>
-        <p class="card-text">
-          Distribution of products likes and dislikes through a heatmap </p>
-      </div>
-    </div>
-  </div> -->
-  <!--
-<div class="container d-flex card shadow" style="border: none; background-color: white;padding: 5%;">
-  <canvas id="cuisineTypeChart"></canvas>
-  <div class="card-body">
-    <h5 class="card-title">adasd</h5>
-    <p class="card-text">
-asdas    </p>
-  </div>
-</div>-->
-
-
-
-
-  <div style="border-radius: 20px; background: #dbbfdf;width: 100%;height: 10px; margin-bottom: 2%;margin-top: 3%;">
-    &nbsp;</div>
-
-
-
-
-
+ 
 </main>
 
 
