@@ -2,7 +2,6 @@
 {% load static %}
 
 
-
 {% block content %} 
     <main class="main">
         
@@ -266,6 +265,28 @@
         // ---------------------------------- BINAGO ULIT
     </script>
 
+    <script>
+        // Toggle dropdown visibility
+        document.getElementById('dropdownMenuButton').addEventListener('click', function () {
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            dropdownMenu.classList.toggle('show'); // Toggle the "show" class
+        });
+
+        // Function to filter by supermarket
+        function selectSupermarket(supermarketName) {
+            const url = new URL(window.location.href); // Current URL
+            url.searchParams.set('supermarket', supermarketName); // Add or update the supermarket filter
+            window.location.href = url; // Redirect with updated query parameters
+        }
+
+        // Close the dropdown after selection
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const dropdownMenu = document.querySelector('.dropdown-menu');
+                dropdownMenu.classList.remove('show'); // Hide the dropdown
+            });
+        });
+    </script>
 
    
 {% endblock %}

@@ -18,6 +18,7 @@ client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5g
 db = client['Product_Comparison_System']
 collection = db['Sept_FInal_Final']
 
+
 def format_price(price_str):
     # Clean the price by removing non-numeric characters and the peso sign (₱)
     cleaned_price_str = re.sub(r'[^\d.]', '', price_str)
@@ -30,8 +31,26 @@ def calculate_price_per_product(price_str):
     # Calculate the price per product for prices in the format "X for Y.YY"
     match = re.match(r'(\d+)\s+for\s+(\d+\.\d+)', price_str)
     if match:
-        return None
+        quantity = float(match.group(1))
+        total_price = float(match.group(2))
+        return total_price / quantity  # Calculate and return the unit price
+    # If the price is not in the "X for Y.YY" format, use format_price to handle it
     return format_price(price_str)
+
+def parse_price(price):
+    # Handle the case where price is None or empty string
+    if not price:
+        return 0.0  # Return 0 if price is None or empty string
+
+    # Check if the price is already a float
+    if isinstance(price, float):
+        return price  # If it's a float, return it directly
+
+    # Remove the '₱' sign and commas if the price is a string
+    price = price.replace('₱', '').replace(',', '')
+
+    # Use calculate_price_per_product to handle the price calculation
+    return calculate_price_per_product(price)
 
 
 def calculate_total_price_per_supermarket(data):
@@ -58,28 +77,41 @@ def calculate_price_stats(data):
         category = item['category']
         price = item['original_price']
 
+        # Parse the price to ensure it's numeric
+        price = parse_price(price)
+
         if supermarket not in price_stats:
             price_stats[supermarket] = {}
 
         if category not in price_stats[supermarket]:
             price_stats[supermarket][category] = []
 
-        price_stats[supermarket][category].append(price)
+        # Only append valid prices (non-zero values)
+        if price > 0.0:
+            price_stats[supermarket][category].append(price)
 
     # Calculate summary statistics (min, max, median) for each supermarket and category
     for supermarket, categories in price_stats.items():
         for category, prices in categories.items():
-            min_price = min(prices)
-            max_price = max(prices)
-            median_price = np.median(prices)
+            # Ensure there are valid prices before calculating statistics
+            if prices:
+                min_price = min(prices)
+                max_price = max(prices)
+                median_price = np.median(prices)
+                price_stats[supermarket][category] = {
+                    'min_price': min_price,
+                    'max_price': max_price,
+                    'median_price': median_price,
+                }
+            else:
+                # In case there are no valid prices, set defaults or handle as needed
+                price_stats[supermarket][category] = {
+                    'min_price': 0.0,
+                    'max_price': 0.0,
+                    'median_price': 0.0,
+                }
 
-            price_stats[supermarket][category] = {
-                'min_price': min_price,
-                'max_price': max_price,
-                'median_price': median_price,
-            }
     return price_stats
-
 
 def calculate_discounted_vs_regular_prices(data):
     discounted_vs_regular_prices = {}
@@ -87,9 +119,19 @@ def calculate_discounted_vs_regular_prices(data):
     for item in data:
         supermarket = item['supermarket']
         category = item['category']
-        original_price = item['original_price']
-        discounted_price = item.get('discounted_price', 0.0)
+        original_price = parse_price(item['original_price'])
+        discounted_price = parse_price(item.get('discounted_price', None))
 
+        # Ensure discounted_price is a float only if it exists
+        if discounted_price is not None:
+            try:
+                discounted_price = float(discounted_price)
+            except ValueError:
+                discounted_price = 0.0  # Default to 0.0 if conversion fails
+        else:
+            discounted_price = 0.0  # No discount, set to 0.0
+
+        # Initialize supermarket and category in the dictionary if not present
         if supermarket not in discounted_vs_regular_prices:
             discounted_vs_regular_prices[supermarket] = {}
 
@@ -103,6 +145,7 @@ def calculate_discounted_vs_regular_prices(data):
         discounted_vs_regular_prices[supermarket][category]['discounted_price_sum'] += discounted_price
 
     return discounted_vs_regular_prices
+
 
 
 def format_date(date_str):
@@ -154,25 +197,66 @@ def get_products_with_price_history():
 # -------------------------------------------------------------------------------------------------------------------------------------------
 
 def chart1(request):
+
+    dislike_like_collection = db['ProductLikesDislikes']
+    # Retrieve the top 10 most liked products
+    top_10_liked_products = list(dislike_like_collection.aggregate([
+        {"$match": {"action": "like"}},  # Filter for "like" actions
+        {"$group": {"_id": "$product_id", "total_likes": {"$sum": 1}}},  # Group by product_id and count likes
+        {"$sort": {"total_likes": -1}},  # Sort by likes in descending order
+        {"$limit": 10}  # Get the top 10 liked products
+    ]))
+
+    # Retrieve details for each product in the top 10 list
+    liked_products_data = []
+    for product in top_10_liked_products:
+        product_info = collection.find_one({"id": product["_id"]}, {"title": 1, "image": 1, "supermarket": 1})
+        if product_info:
+            liked_products_data.append({
+                "name": product_info.get("title"),
+                "image": product_info.get("image"),  # Use "image" field instead of "image_url"
+                "likes": product["total_likes"],
+                "supermarket": product_info.get("supermarket")
+            })
+
+    # Add the liked_products_data to the context
+
+
     # Fetch the data from MongoDB
     data = list(collection.find({}, {'supermarket': 1, 'category': 1, 'original_price': 1, 'discounted_price': 1, 'title': 1}))
+    discounted_vs_regular_prices = calculate_discounted_vs_regular_prices(data)
 
     # Clean and format the 'original_price' field (remove the '₱' sign)
+
+    # Loop for handling the 'original_price' and 'discounted_price' fields
     for item in data:
-        original_price = item['original_price']
-        discounted_price = item.get('discounted_price', None)
+        category = item['category']
+        supermarket = item['supermarket']  # Assign supermarket here
+        original_price = parse_price(item['original_price'])
+        discounted_price = parse_price(item.get('discounted_price', None))
 
-        # Calculate price per product for prices in the format "X for Y.YY"
-        price_per_product = calculate_price_per_product(original_price)
-        price_per_product_discounted = calculate_price_per_product(discounted_price) if discounted_price else None
+        # Ensure discounted_price is a float only if it exists
+        if discounted_price is not None:
+            try:
+                discounted_price = float(discounted_price)
+            except ValueError:
+                discounted_price = 0.0  # Default to 0.0 if conversion fails
+        else:
+            discounted_price = 0.0  # No discount, set to 0.0
 
-        if price_per_product is not None:
-            # Use the calculated price per product
-            item['original_price'] = price_per_product
-        
-        if price_per_product_discounted is not None:
-            # Use the calculated price per product for discounted price
-            item['discounted_price'] = price_per_product_discounted
+        # Initialize supermarket and category in the dictionary if not present
+        if supermarket not in discounted_vs_regular_prices:
+            discounted_vs_regular_prices[supermarket] = {}
+
+        if category not in discounted_vs_regular_prices[supermarket]:
+            discounted_vs_regular_prices[supermarket][category] = {
+                'regular_price_sum': 0.0,
+                'discounted_price_sum': 0.0,
+            }
+
+        discounted_vs_regular_prices[supermarket][category]['regular_price_sum'] += original_price
+        discounted_vs_regular_prices[supermarket][category]['discounted_price_sum'] += discounted_price
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -182,7 +266,7 @@ def chart1(request):
     for item in data:
         supermarket = item['supermarket']
         category = item['category']
-        price = item['original_price']
+        price = parse_price(item['original_price'])
         if supermarket not in category_prices:
             category_prices[supermarket] = {}
         if category not in category_prices[supermarket]:
@@ -322,7 +406,7 @@ def chart1(request):
     price_distribution_data = {}
 
     # Add a special case for "all" to include the Price Distribution Histogram for all supermarkets
-    all_prices = [item['original_price'] for item in data]
+    all_prices = [parse_price(item['original_price']) for item in data if item['original_price']]  # Use parse_price
     price_ranges = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]  # Define your desired price ranges
     frequency = [len([price for price in all_prices if price_range <= price < price_range + 100]) for price_range in price_ranges]
 
@@ -331,8 +415,10 @@ def chart1(request):
         'frequency': frequency,
     }
 
+
+    # Assuming supermarkets is a list or set of supermarket names
     for supermarket in supermarkets:
-        supermarket_prices = [item['original_price'] for item in data if item['supermarket'] == supermarket]
+        supermarket_prices = [parse_price(item['original_price']) for item in data if item['supermarket'] == supermarket and item['original_price']]  # Use parse_price
         frequency = [len([price for price in supermarket_prices if price_range <= price < price_range + 100]) for price_range in price_ranges]
 
         price_distribution_data[supermarket] = {
@@ -346,9 +432,25 @@ def chart1(request):
 #5 ORIGINAL VS DISCOUNTED PRICE----------------------------------------------------------------------------------------------------------------------------------------------
 
     # # Add a special case for "all" to include the total discount and regular prices across all supermarkets
-    all_categories = list(set(category for item in data))
-    all_total_discounted_prices = [sum(item.get('discounted_price', 0.0) for item in data if item['category'] == category) for category in all_categories]
-    all_total_regular_prices = [sum(item['original_price'] for item in data if item['category'] == category) for category in all_categories]
+    all_categories = list(set(item['category'] for item in data))
+
+# Calculate total discounted prices for each category
+    all_total_discounted_prices = [
+        sum(
+            parse_price(item.get('discounted_price', 0.0)) 
+            for item in data if item['category'] == category
+        )
+        for category in all_categories
+    ]
+
+    # Calculate total regular prices for each category
+    all_total_regular_prices = [
+        sum(
+            parse_price(item.get('original_price', 0.0)) 
+            for item in data if item['category'] == category
+        )
+        for category in all_categories
+    ]
 
     price_distribution_data['all'] = {
         'categories': all_categories,
@@ -358,70 +460,29 @@ def chart1(request):
 
     for supermarket in supermarkets:
         categories = list(category_prices[supermarket].keys())
-        total_discounted_prices = [sum(item.get('discounted_price', 0.0) for item in data if item['supermarket'] == supermarket and item['category'] == category) for category in categories]
-        total_regular_prices = [sum(item['original_price'] for item in data if item['supermarket'] == supermarket and item['category'] == category) for category in categories]
-
+    
+        total_discounted_prices = [
+            sum(parse_price(item.get('discounted_price', 0.0)) 
+                for item in data 
+                if item['supermarket'] == supermarket and item['category'] == category)
+            for category in categories
+        ]
+        
+        total_regular_prices = [
+            sum(parse_price(item.get('original_price', 0.0)) 
+                for item in data 
+                if item['supermarket'] == supermarket and item['category'] == category)
+            for category in categories
+        ]
+        
         price_distribution_data[supermarket] = {
             'categories': categories,
             'total_discounted_prices': total_discounted_prices,
             'total_regular_prices': total_regular_prices,
         }
 
-    discounted_vs_regular_prices_data = calculate_discounted_vs_regular_prices(data)
-    discounted_vs_regular_prices_json = json.dumps(discounted_vs_regular_prices_data)
-
-#--------------------------------------------------------------------------------------------------------------------------------------------
-
-    # scatter_data = [{'x': item['original_price'], 'y': item.get('discounted_price', 0.0)} for item in data]
-    # Extract product titles to be used in tooltips
-    # product_titles = [{'title': item['title'],} for item in data]
-
-    # Convert the scatter plot data and product titles to JSON format for JavaScript
-    # scatter_data_json = json.dumps(scatter_data)
-    # product_titles_json = json.dumps(product_titles)
-
-    # Get all products that have price history
-    #  # Get all products that have price history
-    # products_with_price_history = list(collection.find({}, { 'id': 1, 'price_history': 1 }))
-    # # Prepare data to pass to the template
-    # product_data = []
-
-
-    # for product in products_with_price_history:
-    #     product_id = str(product['id'])
-    #     price_history = product.get('price_history', [])
-
-    #     title = collection.find_one({'id': product_id}, {'title': 1})
-    #     product_title = title.get('title', 'Unknown Title')
-    #     dates = []
-    #     prices = []
-
-            
-    #     for entry in price_history:
-    #         # assuming date_scraped is in '2023-09-24T00:00:00.000Z' format
-    #         date_scraped = entry.get('date_scraped')
-    #         if date_scraped:
-    #             # split date and time, format it to 'Sep 24, 2023'
-    #             date = datetime.strptime(date_scraped.split("T")[0], "%Y-%m-%d").strftime("%b %d, %Y")
-    #             dates.append(date)
-            
-    #         price = entry.get('price')
-    #         if price:
-    #             # assuming price is in '₱1,116.00' format
-    #             price = float(price.replace('₱', '').replace(',', ''))
-    #             prices.append(price)
-                
-    #     if dates and prices:
-    #         # Convert the data to JSON format for JavaScript
-    #         dates_json = json.dumps(dates)
-    #         prices_json = json.dumps(prices)
-    #         product_data.append({
-    #             'product_id': product_id,
-    #             'dates_json': dates_json,
-    #             'prices_json': prices_json,
-    #             'title': product_title,  # Include the title in the data
-
-    #         })
+        discounted_vs_regular_prices_data = calculate_discounted_vs_regular_prices(data)
+        discounted_vs_regular_prices_json = json.dumps(discounted_vs_regular_prices_data)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
@@ -446,7 +507,7 @@ def chart1(request):
             price = entry.get('price')
             if price:
                 # assuming price is in '₱1,116.00' format
-                price = float(price.replace('₱', '').replace(',', ''))
+                price = parse_price(price.replace('₱', '').replace(',', ''))
                 prices.append(price)
                 
         if dates and prices:
@@ -458,6 +519,7 @@ def chart1(request):
                 'dates_json': dates_json,
                 'prices_json': prices_json,
             })
+    
     #---------------------------------------------------------USER USER USER------------------------------------------
 
 
@@ -575,6 +637,7 @@ def chart1(request):
 
     # Convert the data for the horizontal stacked bar chart to JSON format for JavaScript
     context = {
+    'username': request.user.username,
         'bar_chart_data_json': bar_chart_data_json,
         'total_prices_json': total_prices_json,
         'doughnut_chart_data_json': doughnut_chart_data_json,  # Add doughnut chart data to the context
@@ -603,7 +666,8 @@ def chart1(request):
         'most_disliked_total_count': most_disliked_total_count,  
         'most_common_purpose': most_common_purpose,  # Add the most common purpose to the context
         'most_common_count': most_common_count,
-        'purpose_counts_json':purpose_counts_json
+        'purpose_counts_json':purpose_counts_json,
+        'liked_products_data': liked_products_data,
         
 
  # Convert the product data to JSON for JavaScript

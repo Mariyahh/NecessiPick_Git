@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-(4mldwfrd@+4hs(hw2h#g!l*fj()if&7qsu3v__dz0rwaakx=q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -148,13 +148,13 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'class': 'logging.StreamHandler',
         },
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': 'WARNING',
     },
 }
 
@@ -208,6 +208,7 @@ EMAIL_HOST_USER = 'mnlbaltazar@tip.edu.ph'  # Your Mailjet API Key
 
 # Update with your Brevo API key
 BREVO_API_KEY = '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'
+GEOLOCATION_API_KEY = "AIzaSyDVhXd2OMgrjXwjcOFx0qGJwoPxswMmoGg"
 
 # Update with your sender email address
 EMAIL_HOST_USER = 'necessipick@gmail.com'

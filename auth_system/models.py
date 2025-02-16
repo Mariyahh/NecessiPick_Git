@@ -10,6 +10,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5gsgvlz.mongodb.net/')
 db = client['Product_Comparison_System'] 
 user_collection = db['Users']
+# user_collection = db['New_Users']
 # user_collection = db['Account']
 
 

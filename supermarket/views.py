@@ -6,14 +6,13 @@ from collections import defaultdict  # Import defaultdict for category counts
 from collections import Counter
 from django.http import JsonResponse
 from bson.json_util import dumps, ObjectId  # Import dumps and ObjectId
-
+from rapidfuzz import fuzz
+from concurrent.futures import ThreadPoolExecutor
 from fuzzywuzzy import fuzz
 
 import uuid
 from django.contrib.auth.decorators import login_required
 from auth_system.views import like_dislike_collection as likes_dislikes_collection
-
-
 
 # Connect to MongoDB
 client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5gsgvlz.mongodb.net/')
@@ -21,43 +20,31 @@ db = client['Product_Comparison_System']
 collection = db['Sept_FInal_Final']
 dislike_like_collection = db['ProductLikesDislikes']
 
-
-
-# Compare function
 def find_similar_products(title, weight, brand, supermarket, collection):
     similar_products = []
-
-    # Get the current supermarket's products
-    current_supermarket_products = list(collection.find({'supermarket': supermarket}))
-
+    
+    # Get current supermarket's products with projection for only the necessary fields
+    current_supermarket_products = list(collection.find({'supermarket': supermarket}, {'_id': 0, 'title': 1, 'weight': 1, 'brand': 1, 'supermarket': 1, 'original_price': 1, 'url': 1, 'image': 1}))
+    
     # Create dictionaries to store the highest combined similarity score and corresponding product for each supermarket
     highest_combined_similarity_scores = {}
     highest_combined_similarity_products = {}
 
-    # Iterate through the documents in the MongoDB collection
-    for other_supermarket_product in collection.find({'supermarket': {'$ne': supermarket}}):
-        # Calculate the similarity score between the input title and the product title
+    def calculate_similarity(other_supermarket_product):
         title_similarity_score = fuzz.ratio(title.lower(), other_supermarket_product.get('title', '').lower())
-
-        # Calculate the similarity score between the input weight and the product weight
         weight_similarity_score = fuzz.ratio(weight.lower(), other_supermarket_product.get('weight', '').lower())
-
-        # Calculate the similarity score between the input brand and the product brand
         brand_similarity_score = fuzz.ratio(brand.lower(), other_supermarket_product.get('brand', '').lower())
 
-        # You can adjust the threshold as needed to consider titles, weights, and brands similar
         if (
             title_similarity_score >= 65
             and weight_similarity_score >= 80
             and brand_similarity_score >= 80
-        ):  # Adjust the thresholds as needed
+        ):
             current_supermarket = other_supermarket_product['supermarket']
-            # Calculate the combined similarity score
             combined_similarity_score = (
                 title_similarity_score + weight_similarity_score + brand_similarity_score
             )
 
-            # Check if we have a product for this supermarket and if the combined similarity score is higher
             if (
                 current_supermarket not in highest_combined_similarity_scores
                 or combined_similarity_score > highest_combined_similarity_scores[current_supermarket]
@@ -72,20 +59,20 @@ def find_similar_products(title, weight, brand, supermarket, collection):
                     'title_similarity_score': title_similarity_score,
                     'weight_similarity_score': weight_similarity_score,
                     'brand_similarity_score': brand_similarity_score,
-                    'combined_similarity_score': combined_similarity_score,  # Include the combined similarity score
+                    'combined_similarity_score': combined_similarity_score,
                 }
 
-    # Convert the highest combined similarity products dictionary into a list
+    # Use ThreadPoolExecutor for parallel similarity calculation
+    with ThreadPoolExecutor() as executor:
+        for other_supermarket_product in collection.find({'supermarket': {'$ne': supermarket}}, {'_id': 0, 'title': 1, 'weight': 1, 'brand': 1, 'supermarket': 1, 'original_price': 1, 'url': 1, 'image': 1}):
+            executor.submit(calculate_similarity, other_supermarket_product)
+
+    # Convert the highest combined similarity products dictionary into a list and sort
     similar_products = list(highest_combined_similarity_products.values())
-
-    # Sort the similar products by combined similarity score (highest first)
     similar_products.sort(key=lambda x: x['combined_similarity_score'], reverse=True)
-    print(f"Similar Products from other supermarkets: {similar_products}")  # Add this print statement
-
+    
     return similar_products
-
-
-
+    
 # Compare View/template
 def compare_modal(request, product_id):
 

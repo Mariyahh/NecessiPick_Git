@@ -4,22 +4,151 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 import re
 from collections import defaultdict  # Import defaultdict for category counts
 from collections import Counter
+from django.http import JsonResponse
+from bson.json_util import dumps, ObjectId  # Import dumps and ObjectId
+from rapidfuzz import fuzz
+from concurrent.futures import ThreadPoolExecutor
+from fuzzywuzzy import fuzz
 
-
-
+import uuid
+from django.contrib.auth.decorators import login_required
+from auth_system.views import like_dislike_collection as likes_dislikes_collection
 
 # Connect to MongoDB
 client = MongoClient('mongodb+srv://capstonesummer1:9Q8SkkzyUPhEKt8i@cluster0.5gsgvlz.mongodb.net/')
 db = client['Product_Comparison_System']
-collection = db['Graph']
+collection = db['Sept_FInal_Final']
+dislike_like_collection = db['ProductLikesDislikes']
+
+def find_similar_products(title, weight, brand, supermarket, collection):
+    similar_products = []
+    
+    # Get current supermarket's products with projection for only the necessary fields
+    current_supermarket_products = list(collection.find({'supermarket': supermarket}, {'_id': 0, 'title': 1, 'weight': 1, 'brand': 1, 'supermarket': 1, 'original_price': 1, 'url': 1, 'image': 1}))
+    
+    # Create dictionaries to store the highest combined similarity score and corresponding product for each supermarket
+    highest_combined_similarity_scores = {}
+    highest_combined_similarity_products = {}
+
+    def calculate_similarity(other_supermarket_product):
+        title_similarity_score = fuzz.ratio(title.lower(), other_supermarket_product.get('title', '').lower())
+        weight_similarity_score = fuzz.ratio(weight.lower(), other_supermarket_product.get('weight', '').lower())
+        brand_similarity_score = fuzz.ratio(brand.lower(), other_supermarket_product.get('brand', '').lower())
+
+        if (
+            title_similarity_score >= 65
+            and weight_similarity_score >= 80
+            and brand_similarity_score >= 80
+        ):
+            current_supermarket = other_supermarket_product['supermarket']
+            combined_similarity_score = (
+                title_similarity_score + weight_similarity_score + brand_similarity_score
+            )
+
+            if (
+                current_supermarket not in highest_combined_similarity_scores
+                or combined_similarity_score > highest_combined_similarity_scores[current_supermarket]
+            ):
+                highest_combined_similarity_scores[current_supermarket] = combined_similarity_score
+                highest_combined_similarity_products[current_supermarket] = {
+                    'title': other_supermarket_product.get('title', ''),
+                    'supermarket': current_supermarket,
+                    'original_price': other_supermarket_product.get('original_price', ''),
+                    'url': other_supermarket_product.get('url', ''),
+                    'image': other_supermarket_product.get('image', ''),
+                    'title_similarity_score': title_similarity_score,
+                    'weight_similarity_score': weight_similarity_score,
+                    'brand_similarity_score': brand_similarity_score,
+                    'combined_similarity_score': combined_similarity_score,
+                }
+
+    # Use ThreadPoolExecutor for parallel similarity calculation
+    with ThreadPoolExecutor() as executor:
+        for other_supermarket_product in collection.find({'supermarket': {'$ne': supermarket}}, {'_id': 0, 'title': 1, 'weight': 1, 'brand': 1, 'supermarket': 1, 'original_price': 1, 'url': 1, 'image': 1}):
+            executor.submit(calculate_similarity, other_supermarket_product)
+
+    # Convert the highest combined similarity products dictionary into a list and sort
+    similar_products = list(highest_combined_similarity_products.values())
+    similar_products.sort(key=lambda x: x['combined_similarity_score'], reverse=True)
+    
+    return similar_products
+    
+# Compare View/template
+def compare_modal(request, product_id):
+
+    product = collection.find_one({'id': product_id})
+
+    # Get the product title
+    product_title = product.get('title', '')
+    product_weight = product.get('weight', '')
+    product_brand = product.get('brand', '')
+    product_price = product.get('original_price', '')
+    product_supermarket = product.get('supermarket', '')
+    product_image = product.get('image', '')
+
+    # Use the find_similar_products function to find similar products
+    similar_products = find_similar_products(product_title, product_weight, product_brand, product_supermarket, collection)
+    print(f"Similar Products: {similar_products}")  # Add this print statement
+
+
+    context = {
+        'similar_products': similar_products,  # Pass the list of similar products to the template
+        'product_title': product_title,
+        'product_price': product_price,
+        'product_supermarket': product_supermarket,
+        'product_image': product_image
+    }
+    return render(request, 'supermarket/compare_modal.html', context)
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
+# Quick View/template
+def quickview_modal(request, product_id):
 
+    product = collection.find_one({'id': product_id})
 
+    # Get the product title
+    product_title = product.get('title', '')
+    product_price = product.get('original_price', '')
+    product_supermarket = product.get('supermarket', '')
+    product_image = product.get('image', '')
+
+      # Calculate the like and dislike counts for the product
+    like_count = dislike_like_collection.count_documents({'product_id': product_id, 'action': 'like'})
+    dislike_count = dislike_like_collection.count_documents({'product_id': product_id, 'action': 'dislike'})
+    
+
+    
+    context = {
+        'product':product,
+        'product_title': product_title,
+        'product_price': product_price,
+        'product_supermarket': product_supermarket,
+        'product_image': product_image,
+        'like_count': like_count,
+        'dislike_count': dislike_count,
+    }
+   
+    return render(request, 'supermarket/quickview_modal.html', context)
+
+# Function to get the number of likes for a product
+def get_likes_count(product, dislike_like_data):
+    likes_count = sum(1 for item in dislike_like_data if item['product_id'] == product['id'] and item['action'] == 'like')
+    return likes_count
+
+# Function to get the number of dislikes for a product
+def get_dislikes_count(product, dislike_like_data):
+    dislikes_count = sum(1 for item in dislike_like_data if item['product_id'] == product['id'] and item['action'] == 'dislike')
+    return dislikes_count
+
+# All categories 
 def supermarket_page(request, supermarket_name):
     # Retrieve products from the selected supermarket
     # products = collection.find({'supermarket': supermarket_name})
+    dislike_like_data = list(dislike_like_collection.find({}))
+
     all_products =list(collection.find({'supermarket': supermarket_name}))
 
     # Define banner image URLs for each supermarket (adjust these URLs as needed)
@@ -33,13 +162,18 @@ def supermarket_page(request, supermarket_name):
 
     # Calculate category counts for the selected supermarket
     category_counts = Counter(product['category'].replace(' ', '_') for product in all_products)
-    
     # Calculate the total number of products for the selected supermarket
     total_products = len(all_products)
+    # Calculate the number of likes and dislikes in every product then display
+    for product in all_products:
+        product['like_count'] = get_likes_count(product, dislike_like_data)
+        product['dislike_count'] = get_dislikes_count(product, dislike_like_data)
 
+ 
+    # %%%%%%%%%%%%%%%%%%%%%%%%%
+    # Create a custom paginator
     # Create a Paginator object with 20 products per page
     paginator = Paginator(all_products, 20)
-   
     # Get the requested page number from the URL query parameters
     page = request.GET.get('page')
 
@@ -61,67 +195,87 @@ def supermarket_page(request, supermarket_name):
         'total_products': total_products,  # Pass the total number of products for the selected category
         'category_counts': category_counts,
         'banner_image_url': banner_image_url,
-        # 'product_by_category': product_by_category,
+       
     }
-
     return render(request, 'supermarket/supermarket_page.html', context)
 
 
 
-
-def get_similar_products(product, supermarket_name):
-    # Define similarity criteria, e.g., based on product name
-    similarity_criteria = {
-        'product_name': product['product_name'],
-        'supermarket': {'$ne': supermarket_name},  # Exclude the current supermarket
-    }
-    
-    # Query the database to find similar products
-    similar_products = list(collection.find(similarity_criteria))
-
-    return get_similar_products
-
-def compare_modal(request, supermarket_name, product_id):
-    # Retrieve the selected product
-    selected_product = collection.find_one({'supermarket': supermarket_name, 'id': product_id})
-
-    # Get similar products from other supermarkets
-    similar_products = get_similar_products(selected_product, supermarket_name)
-
-    context = {
-        'selected_product': selected_product,
-        'similar_products': similar_products,
-    }
-
-    return render(request, 'supermarket/supermarket_page.html', context)
-
-
-
-
-
-
-
-
-
+# product per category
 def supermarket_category(request, supermarket_name, category_name):
     categories = collection.distinct('category', {'supermarket': supermarket_name})
-    
+    dislike_like_data = list(dislike_like_collection.find({}))
+
     # Create a dictionary to store product by category
     product_by_category = {}
 
-    # Retrieve products for each category
-    for category in categories:
-        products = collection.find({'supermarket': supermarket_name, 'category': category_name})
-        product_by_category[category] = list(products)
+    # # Retrieve products for each category
+    # for category in categories:
+    #     products = collection.find({'supermarket': supermarket_name, 'category': category_name})
+    #     product_by_category[category] = list(products)
 
 
     products = list(collection.find({'supermarket': supermarket_name, 'category': category_name}))
+    all_products =list(collection.find({'supermarket': supermarket_name}))
+
+    # Update the products list to include like and dislike counts
+    for product in products:
+        product['like_count'] = get_likes_count(product, dislike_like_data)
+        product['dislike_count'] = get_dislikes_count(product, dislike_like_data)
     
+    # Get the selected sorting option from the URL query parameters
+    sort_option = request.GET.get('sort')
+
+    if sort_option == 'likes':
+        # Sort by highest likes
+        products.sort(key=lambda product: get_likes_count(product, dislike_like_data), reverse=True)
+    elif sort_option == 'dislikes':
+        # Sort by highest dislikes
+        products.sort(key=lambda product: get_dislikes_count(product, dislike_like_data), reverse=True)
+    else:
+        # Default sorting (e.g., by price)
+        sorting_key = None  # Your existing sorting logic here
+
+
+    
+    # Get the selected sorting option from the URL query parameters
+    sort_option = request.GET.get('sort')
+
+    # Get the selected price range from the URL query parameters
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+
+    # Get the selected supermarket from the URL query parameters
+    selected_supermarket = request.GET.get('supermarket')
+
+    # Filter products based on the selected price range
+    if min_price is not None and max_price is not None:
+        min_price = float(min_price)
+        max_price = float(max_price)
+        products = [product for product in products if min_price <= get_price(product) <= max_price]
+
+    # Filter products based on the selected supermarket (if provided)
+    if selected_supermarket and selected_supermarket != 'None':
+        products = [product for product in products if product['supermarket'] == selected_supermarket]
+
+     # Determine the sorting key based on the selected option
+    if sort_option == 'price_low_to_high':
+        sorting_key = 'discounted_price'  # Sort by discounted price ascending
+    elif sort_option == 'price_high_to_low':
+        sorting_key = '-discounted_price'  # Sort by discounted price descending
+    else:
+        sorting_key = None  # Default: No sorting
+
+    if sorting_key:
+        # Sort the entire list of products based on the sorting key
+        products = sort_products(products, sort_option)
+
+
     # Calculate the total number of products for the selected category
     total_products = len(products)
 
     # # Calculate category counts for the selected supermarket
-    category_counts = Counter(product['category'].replace(' ', '_') for product in products)
+    category_counts = Counter(product['category'].replace(' ', '_') for product in all_products)
 
     # Create a Paginator object with 20 products per page
     paginator = Paginator(products, 20)
@@ -142,14 +296,16 @@ def supermarket_category(request, supermarket_name, category_name):
 
     context = {
         'supermarket': supermarket_name,
-        'category': category_name,
+        # 'category': category_name,
         'categories': categories,
+        'category_name': category_name,
         'products': products,
         'product_by_category' : product_by_category,
 
         'product_page': product_page,  # Pass the paginated products to the template
         'total_products': total_products,
         'category_counts': category_counts,
+        'sort_option': sort_option,
 
 
     }
@@ -157,10 +313,36 @@ def supermarket_category(request, supermarket_name, category_name):
     return render(request, 'supermarket/supermarket_category.html', context)
 
 
-def hot_deals(request):
-    
-    return render(request, 'supermarket/hot_deals.html')
+def sort_products(products, sort_option):
+    # Filter out products with None prices before sorting
+    products = [product for product in products if get_price(product) is not None]
 
+    if sort_option == 'price_low_to_high':
+        sorted_products = sorted(products, key=lambda x: get_price(x))
+    elif sort_option == 'price_high_to_low':
+        sorted_products = sorted(products, key=lambda x: get_price(x), reverse=True)
+    else:
+        sorted_products = products  # Default: no sorting
+
+    return sorted_products
+
+
+def get_price(product):
+    # Try to get the discounted price, then the original price, and default to None if both are missing
+    price_str = product.get('discounted_price') or product.get('original_price')
+
+    if price_str:
+        # Remove non-numeric characters and spaces from the price string
+        cleaned_price_str = re.sub(r'[^\d.]', '', price_str)
+
+        if cleaned_price_str:
+            # Try to convert the cleaned price string to a float
+            return float(cleaned_price_str)
+
+    # Return None if price information is missing or cannot be converted
+    return None
 
 
 # Add more view functions as needed for other pages related to the supermarket
+
+

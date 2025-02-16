@@ -56,6 +56,7 @@ product_collection = db['Sept_FInal_Final']
 
 comments_collection = db['Comments']
 user_collection = db['Users']
+# user_collection = db['New_Users']
 favorites_collection = db['FavoritesFinal']
 clicks_collection = db['UserClicks']
 saved_favorites_collection = db['SavedFavorites']
@@ -116,17 +117,19 @@ def Register(request):
         else:
 
             # separate account info | saving into database
-            new_user = User.objects.create_user(uname, email, password)
+            # new_user = User.objects.create_user(uname, email, password)
+            new_user = User(username=uname, email=email)
+            new_user.set_password(password)  # Encrypt the password
             new_user.first_name = fname
             new_user.last_name = lname
             new_user.save()
 
             # Generate a unique verification token
-            verification_token = get_random_string(length=32)  # You can adjust the length as needed
+            # verification_token = get_random_string(length=32)  # You can adjust the length as needed
 
             # Create a UserProfile model (assuming you have one) to store additional user information
             # Update the UserProfile model with the token
-            user_profile = UserProfile(user=new_user, email_verification_token=verification_token, gender=gender, birthday=birthday, region=region, city=city, age=age, purpose=purpose)
+            user_profile = UserProfile(user=new_user, gender=gender, birthday=birthday, region=region, city=city, age=age, purpose=purpose)
 
             # Set the default profile picture for the user profile
             # First, you need to open the default profile picture file and assign it to the profile_picture field.
@@ -136,15 +139,26 @@ def Register(request):
 
             user_profile.save()
 
-            # Create a MongoDBUser object and save user details to MongoDB
-            mongo_user = MongoDBUser(user_id=new_user.id, username=uname, email=email, password=password, confirm_password=confirm_password, fname=fname, lname=lname,
-                                    gender=gender, birthday=birthday, region=region, city=city, age=age, purpose=purpose)
-            mongo_user.save()  # Save user details to MongoDB
+            # # Create a MongoDBUser object and save user details to MongoDB
+            # mongo_user = MongoDBUser(user_id=new_user.id, username=uname, email=email, password=password, confirm_password=confirm_password, fname=fname, lname=lname,
+            #                         gender=gender, birthday=birthday, region=region, city=city, age=age, purpose=purpose)
+            # mongo_user.save()  # Save user details to MongoDB
+            # Hash password for MongoDB as well
+            hashed_password = new_user.password  # Already hashed by Django's set_password
+            mongo_user = MongoDBUser(user_id=new_user.id, username=uname, email=email, password=hashed_password, 
+                         confirm_password=confirm_password, fname=fname, lname=lname,
+                         gender=gender, birthday=birthday, region=region, city=city, 
+                         age=age, purpose=purpose)
+            mongo_user.save()
 
             # Send a verification email to the user
-            send_verification_email(new_user, verification_token)
+            # send_verification_email(new_user, verification_token)
 
-            return redirect('auth_system:verification-page') # proceed to verification-page when form submitted successfully
+            # return redirect('auth_system:verification-page') # proceed to verification-page when form submitted successfully
+             # Instead of sending verification email, redirect to login page with success message
+            messages.success(request, "You have successfully registered! Log in now.")
+            return redirect('auth_system:login-page')  # Redirect to the login page after successful registration
+
     return render(request, 'auth_system/register.html',{}) # return to register page when form submission failed
 
 # For real time error message } email and username validation
@@ -160,8 +174,6 @@ def check_uname(request):
     exists = User.objects.filter(username=uname).exists()
     return JsonResponse({'exists': exists})
 
-
-
 # Verifies user once link is clicked from the email
 def EmailVerification(request, token):
     user_profile = UserProfile.objects.filter(email_verification_token=token).first()
@@ -176,36 +188,6 @@ def EmailVerification(request, token):
         messages.error(request, 'Invalid verification token.')
         return redirect('auth_system:verification-page')
         # return render('auth_system:verification-page')
-
-# VERIFICATION EMAIL (WORKING)
-# # Email containing verification link 
-# def send_verification_email(user, token):
-#     subject = 'Email Verification'
-#     message = f'Please click the following link to verify your email: http://http://127.0.0.1:8000/verification/{token}/'
-#     # message = f'Please click the following link to verify your email: http://127.0.0.1:8000/verification/{token}/'
-
-#     from_email = settings.EMAIL_HOST_USER
-#     to_email = user.email
-
-#     data = {
-#         'from': from_email,
-#         'to': to_email,
-#         'subject': subject,
-#         'text': message,
-#     }
-#     response = requests.post(
-#         f"https://api.mailgun.net/v3/{settings.MAILGUN_DOMAIN}/messages",
-#         auth=("api", settings.MAILGUN_API_KEY),
-#         data=data
-#     )
-
-#     if response.status_code == 200:
-#         print("Email sent successfully")
-#     else:
-#         print("Failed to send email. Status code:", response.status_code)
-
-
-# %%%%%%%%%%%%%%%%  TRY SA VERIFY EAMIL TEMPLATE %%%%%%%%%%%%%%%%%
 
 # Pending verification page
 def VerificationPage(request):
@@ -245,7 +227,6 @@ def VerificationPage(request):
         print("Email sent successfully")
     else:
         print("Failed to send email. Status code:", response.status_code)
-
 
 
 def send_verification_email(user, token):
@@ -309,7 +290,6 @@ def profile(request):
     }
 
     return render(request, 'auth_system/profile.html', context)
-
 
 
 @login_required
@@ -469,65 +449,6 @@ def Logout(request):
     logout(request)
     return redirect('auth_system:login-page')
 
-
-
-# def request_password_reset(request):
-#     if request.method == 'POST':
-#         email = request.POST.get('email')
-#         # Check if the email exists in your database
-#         user = User.objects.filter(email=email).first()
-#         if user:
-#             # Generate a unique token for this user
-#             token = default_token_generator.make_token(user)
-#             # Send the password reset email with the token
-            
-#             send_password_reset_email(user, token)
-#             # send_password_reset_email(user)
-
-#             # return render(request, 'password_reset_instructions_sent.html')
-#             messages.success(request, 'Instructions has been sent. Please check your email.')
-
-#         else:
-#             # Handle cases where the email does not exist
-#             messages.error(request, 'Your email is not valid')
-
-#             # return render(request, 'password_reset_error.html')
-
-#     return render(request, 'auth_system/request_password_reset.html')
-
-
-
-
-# def request_password_reset(request):
-#     if request.method == 'POST':
-#         email = request.POST.get('email')
-#         # Check if the email exists in your database
-#         user = User.objects.filter(email=email).first()
-#         # user_profile = UserProfile.objects.filter(email=email).first()
-
-#         if user:
-#             # Generate a unique token for this user
-#             token = default_token_generator.make_token(user)
-
-#             # Store the token in the user's UserProfile model
-#             user_profile, created = UserProfile.objects.get_or_create(user=user)
-#             user_profile.password_reset_token = token
-#             user_profile.save()
-#             # Store the token in the user model
-#             # user = UserProfile(password_reset_token = token)
-#             # user.password_reset_token = token
-#             # user.save()
-
-#             # Send the password reset email with the token
-#             send_password_reset_email(user, token)
-#             messages.success(request, 'Instructions have been sent. Please check your email.')
-#         else:
-#             messages.error(request, 'Your email is not valid')
-#     return render(request, 'auth_system/request_password_reset.html')
-
-
-# ==&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-
 # enter email where the reset pass instruction is to be sent
 def request_password_reset(request):
     if request.method == 'POST':
@@ -546,26 +467,6 @@ def request_password_reset(request):
         except ObjectDoesNotExist:
             messages.error(request, 'The provided email does not exist in our database.')
     return render(request, 'auth_system/request_password_reset.html')
-
-# def request_password_reset(request):
-#     if request.method == 'POST':
-#         email = request.POST.get('email')
-#         # Check if the email exists in your database
-#         user_profile = User.objects.filter(email=email).first()
-#         # user_profile = UserProfile.objects.filter(email=email).first()
-
-#         if user_profile:
-#             # Generate a unique token for this user
-#             token = default_token_generator.make_token(user_profile)
-#             # Store the token in the user model
-#             user_profile.password_reset_token = token
-#             user_profile.save()
-#             # Send the password reset email with the token
-#             send_password_reset_email(user_profile, token)
-#             messages.success(request, 'Instructions have been sent. Please check your email.')
-#         else:
-#             messages.error(request, 'Your email is not valid')
-#     return render(request, 'auth_system/request_password_reset.html')
 
 
 def send_password_reset_email(user, token):
@@ -600,39 +501,6 @@ def send_password_reset_email(user, token):
         print("Email sent successfully")
     except ApiException as e:
         print("Exception when calling SMTPApi->send_transac_email: %s\n" % e)
-
-# sends the instruction to the provided email
-# def send_password_reset_email(user, token):
-#     subject = 'Password Reset'
-#     from_email = settings.EMAIL_HOST_USER
-#     recipient_list = [user.email]
-
-#     # Prepare context to render the template
-#     context = {
-#         'user': user,
-#         'token': token,
-#     }
-#      # Load the email template as a string
-#     html_content = render_to_string('auth_system/password_reset_email.html', context)
-#     text_content = strip_tags(html_content)
-
-#     data = {
-#         'from': from_email,
-#         'to': recipient_list,
-#         'subject': subject,
-#         'text': text_content,
-#         'html': html_content,
-#     }
-#     response = requests.post(
-#         f"https://api.mailgun.net/v3/{settings.MAILGUN_DOMAIN}/messages",
-#         auth=("api", settings.MAILGUN_API_KEY),
-#         data=data
-#     )
-
-#     if response.status_code == 200:
-#         print("Email sent successfully")
-#     else:
-#         print("Failed to send email. Status code:", response.status_code)
 
 
 def send_password_reset_email(user, token):
@@ -859,68 +727,4 @@ def remove_saved_favorite(request):
             return JsonResponse({"success": False, "error": str(e)})
 
     return JsonResponse({"success": False})
-
-
-
-# def send_password_reset_email(user, token):
-#     subject = 'Password Reset'
-#     from_email = settings.EMAIL_HOST_USER
-#     recipient_list = [user.email]
-#     message = f'Click the link below: http://127.0.0.1:8000/password-reset/{token}/ '
-
-   
-#     data = {
-#         'from': from_email,
-#         'to': recipient_list,
-#         'subject': subject,
-#         'text': message,
-#     }
-#     response = requests.post(
-#         f"https://api.mailgun.net/v3/{settings.MAILGUN_DOMAIN}/messages",
-#         auth=("api", settings.MAILGUN_API_KEY),
-#         data=data
-#     )
-
-#     if response.status_code == 200:
-#         print("Email sent successfully")
-#     else:
-#         print("Failed to send email. Status code:", response.status_code)
-
-
-
-# def reset_password_form(request, token): 
-#     # Verify the token
-#     User = get_user_model()
-    
-#     # Find the user with the associated token
-#     user_profile = UserProfile.objects.filter(password_reset_token=token).first()
-    
-#     if user_profile and default_token_generator.check_token(user_profile, token):
-#         if request.method == 'POST':
-#             new_password = request.POST.get('new_password')
-#             confirm_password = request.POST.get('confirm_password')
-#             if new_password == confirm_password:
-#                 # Update the user's password in the User model
-#                 user = user_profile.user
-#                 user.set_password(new_password)
-#                 user.save()
-
-#                 # # Update the password in the MongoDBUser model
-#                 # mongo_user = MongoDBUser.find_by_username(user.username)
-#                 # if mongo_user:
-#                 #     mongo_user.password = new_password
-#                 #     mongo_user.save()
-
-#                  # Clear the password reset token in the UserProfile model
-#                 user_profile.password_reset_token = ""
-#                 user_profile.save()
-
-#                 messages.success(request, 'Password reset successful')
-#                 return render(request, 'auth_system/login.html')
-#             else:
-#                 messages.error(request, 'Password reset failed. Please make sure the passwords match.')
-#                 return render(request, 'auth_system/reset_password_form.html')
-#     else:
-#         messages.error(request, 'Invalid or expired password reset token.')
-#         return render(request, 'auth_system/reset_password_form.html')
 
